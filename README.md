@@ -6,6 +6,9 @@ relatório mostra quem fez e quem não fez. Passado o prazo sem concluir, o aces
 
 > Protótipo para validação de conceito. Veja "Limites do protótipo" antes de usar com dados reais.
 
+**Demo ao vivo:** https://capacita-rust.vercel.app
+(admin: `admin@platinum.com` / `admin123` — aluno: `ana@acme.com` / `aluno123`)
+
 ## Como rodar
 
 Pré-requisito: Node.js 20+ e uma URL de Postgres (ex: um banco free do Neon/Vercel).
