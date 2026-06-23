@@ -1,0 +1,69 @@
+// Schema do banco do Capacita (protótipo).
+// Modelo central: um Cliente (empresa) tem Usuarios; Treinamentos sao atribuidos
+// a Usuarios com um prazo; ao vencer o prazo sem conclusao, o acesso e cortado.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id           Int           @id @default(autoincrement())
+  nome         String
+  usuarios     Usuario[]
+  treinamentos Treinamento[]
+  criadoEm     DateTime      @default(now())
+}
+
+model Usuario {
+  id          Int          @id @default(autoincrement())
+  nome        String
+  email       String       @unique
+  senhaHash   String
+  papel       String // "admin" | "aluno"
+  clienteId   Int?
+  cliente     Cliente?     @relation(fields: [clienteId], references: [id])
+  atribuicoes Atribuicao[]
+  criadoEm    DateTime     @default(now())
+}
+
+model Treinamento {
+  id          Int          @id @default(autoincrement())
+  titulo      String
+  descricao   String
+  tipo        String // "video" | "texto"
+  conteudoUrl String? // URL de embed quando tipo = video
+  corpo       String? // texto/markdown simples quando tipo = texto
+  clienteId   Int? // null = treinamento global (vale para todos os clientes)
+  cliente     Cliente?     @relation(fields: [clienteId], references: [id])
+  atribuicoes Atribuicao[]
+  criadoEm    DateTime     @default(now())
+}
+
+model Atribuicao {
+  id            Int           @id @default(autoincrement())
+  treinamentoId Int
+  treinamento   Treinamento   @relation(fields: [treinamentoId], references: [id])
+  usuarioId     Int
+  usuario       Usuario       @relation(fields: [usuarioId], references: [id])
+  atribuidoEm   DateTime      @default(now())
+  prazo         DateTime
+  concluidoEm   DateTime?
+  notificacoes  Notificacao[]
+
+  @@unique([treinamentoId, usuarioId])
+}
+
+// Log das "notificacoes por email" (simuladas no prototipo).
+model Notificacao {
+  id           Int        @id @default(autoincrement())
+  atribuicaoId Int
+  atribuicao   Atribuicao @relation(fields: [atribuicaoId], references: [id])
+  tipo         String // "liberacao" | "lembrete" | "vencido"
+  mensagem     String
+  enviadoEm    DateTime   @default(now())
+}

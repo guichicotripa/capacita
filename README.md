@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Capacita — Protótipo
 
-## Getting Started
+Plataforma de **treinamento e conscientização de segurança** (estilo KnowBe4), com foco
+em **atendimento por cliente**. Admin atribui treinamentos com prazo, o aluno faz, e um
+relatório mostra quem fez e quem não fez. Passado o prazo sem concluir, o acesso é cortado.
 
-First, run the development server:
+> Protótipo para validação de conceito. Veja "Limites do protótipo" antes de usar com dados reais.
+
+## Como rodar
+
+Pré-requisito: Node.js 20+.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env   # define o caminho do banco SQLite
+npm run db:reset       # cria o banco SQLite e popula dados de demonstração
+npm run dev            # sobe em http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Contas de demonstração
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Papel | Email | Senha |
+|-------|-------|-------|
+| Admin | admin@platinum.com | admin123 |
+| Aluno | ana@acme.com | aluno123 |
+| Aluno | bruno@acme.com | aluno123 |
+| Aluno | carla@globex.com | aluno123 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Os dados de seed incluem, de propósito, **uma atribuição já vencida** (Bruno) para você ver
+a regra de corte de acesso funcionando na hora.
 
-## Learn More
+## O que dá pra fazer
 
-To learn more about Next.js, take a look at the following resources:
+**Admin:**
+- Relatório de conclusão (taxa, concluídos/pendentes/vencidos) com filtro por cliente
+- Atribuir treinamento a um aluno com prazo (gera notificação)
+- Criar treinamentos (vídeo via embed ou texto), globais ou específicos de um cliente
+- Ver clientes e o progresso de cada aluno
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Aluno:**
+- Ver treinamentos liberados com prazo
+- Abrir e consumir o conteúdo, marcar como concluído
+- Treinamento vencido aparece como "Acesso encerrado" e não pode mais ser aberto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Como funciona por dentro
 
-## Deploy on Vercel
+- **Next.js (App Router) + TypeScript** — telas e Server Actions para as mutações.
+- **Prisma + SQLite** — banco em arquivo (`prisma/dev.db`). O schema está em
+  `prisma/schema.prisma` e é a melhor forma de entender o modelo de dados.
+- **Senhas com hash scrypt** (`lib/password.ts`) — nada de senha em texto puro.
+- A regra de status (concluído / pendente / vencido) fica isolada em `lib/status.ts`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Limites do protótipo (o que falta para produção)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Itens deixados de fora de propósito, para não inflar o protótipo:
+
+- **Autenticação é simplificada** (cookie com id do usuário, sem expiração de sessão nem
+  proteção CSRF). Não usar em produção como está.
+- **Email é simulado** — as notificações vão para uma tabela e aparecem na tela de Atribuir.
+  Trocar por envio real (SMTP/Resend) é mudança localizada na action `atribuir`.
+- **Sem upload de arquivo** — vídeo entra por URL de embed. PPT interativa de verdade é
+  evolução futura.
+- **Sem phishing simulado**, SSO, multi-idioma, lembretes automáticos por agendador.
+
+## Scripts úteis
+
+- `npm run db:reset` — recria o banco e repopula a demo
+- `npm run db:seed` — só repopula
+- `npm run build` — build de produção (valida tipos)
