@@ -47,3 +47,6 @@ next-env.d.ts
 
 .vercel
 .env*.local
+
+# .env.example e um template (sem segredo) e deve ir pro git
+!.env.example
