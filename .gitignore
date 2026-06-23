@@ -41,8 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 # Prisma local DB
-/prisma/dev.db
-/prisma/dev.db-journal
 
 # Preview tool config
 /.claude
+
+.vercel
+.env*.local

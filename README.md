@@ -8,12 +8,12 @@ relatório mostra quem fez e quem não fez. Passado o prazo sem concluir, o aces
 
 ## Como rodar
 
-Pré-requisito: Node.js 20+.
+Pré-requisito: Node.js 20+ e uma URL de Postgres (ex: um banco free do Neon/Vercel).
 
 ```bash
 npm install
-cp .env.example .env   # define o caminho do banco SQLite
-npm run db:reset       # cria o banco SQLite e popula dados de demonstração
+cp .env.example .env   # preencha DATABASE_URL e DIRECT_URL com as conexões do Postgres
+npm run db:reset       # cria as tabelas e popula dados de demonstração
 npm run dev            # sobe em http://localhost:3000
 ```
 
@@ -45,7 +45,7 @@ a regra de corte de acesso funcionando na hora.
 ## Como funciona por dentro
 
 - **Next.js (App Router) + TypeScript** — telas e Server Actions para as mutações.
-- **Prisma + SQLite** — banco em arquivo (`prisma/dev.db`). O schema está em
+- **Prisma + PostgreSQL** (Neon/Vercel em produção). O schema está em
   `prisma/schema.prisma` e é a melhor forma de entender o modelo de dados.
 - **Senhas com hash scrypt** (`lib/password.ts`) — nada de senha em texto puro.
 - A regra de status (concluído / pendente / vencido) fica isolada em `lib/status.ts`.
