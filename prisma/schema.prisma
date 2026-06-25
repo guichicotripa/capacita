@@ -42,29 +42,52 @@ model Treinamento {
   clienteId   Int? // null = treinamento global (vale para todos os clientes)
   cliente     Cliente?     @relation(fields: [clienteId], references: [id])
   atribuicoes Atribuicao[]
+  perguntas   Pergunta[] // quiz opcional; se houver perguntas, concluir exige passar
+  notaMinima  Int          @default(70) // % minimo de acerto para concluir
+  geradoPorIa Boolean      @default(false)
   criadoEm    DateTime     @default(now())
+}
+
+// Pergunta de multipla escolha do quiz de um treinamento.
+model Pergunta {
+  id            Int           @id @default(autoincrement())
+  treinamentoId Int
+  treinamento   Treinamento   @relation(fields: [treinamentoId], references: [id], onDelete: Cascade)
+  enunciado     String
+  ordem         Int           @default(0)
+  alternativas  Alternativa[]
+}
+
+model Alternativa {
+  id         Int      @id @default(autoincrement())
+  perguntaId Int
+  pergunta   Pergunta @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
+  texto      String
+  correta    Boolean  @default(false)
 }
 
 model Atribuicao {
   id            Int           @id @default(autoincrement())
   treinamentoId Int
-  treinamento   Treinamento   @relation(fields: [treinamentoId], references: [id])
+  treinamento   Treinamento   @relation(fields: [treinamentoId], references: [id], onDelete: Cascade)
   usuarioId     Int
   usuario       Usuario       @relation(fields: [usuarioId], references: [id])
   atribuidoEm   DateTime      @default(now())
   prazo         DateTime
   concluidoEm   DateTime?
+  nota          Int? // % de acerto na ultima tentativa do quiz (null = sem quiz / nao tentou)
   notificacoes  Notificacao[]
 
   @@unique([treinamentoId, usuarioId])
 }
 
-// Log das "notificacoes por email" (simuladas no prototipo).
+// Log das "notificacoes por email" (simuladas no prototipo, reais com RESEND_API_KEY).
 model Notificacao {
   id           Int        @id @default(autoincrement())
   atribuicaoId Int
-  atribuicao   Atribuicao @relation(fields: [atribuicaoId], references: [id])
+  atribuicao   Atribuicao @relation(fields: [atribuicaoId], references: [id], onDelete: Cascade)
   tipo         String // "liberacao" | "lembrete" | "vencido"
   mensagem     String
+  canal        String     @default("simulado") // "simulado" | "email"
   enviadoEm    DateTime   @default(now())
 }

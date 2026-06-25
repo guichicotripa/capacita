@@ -82,6 +82,35 @@ async function main() {
         "Ative a verificação em duas etapas (2FA) sempre que possível.\n\n" +
         "Nunca compartilhe senhas por mensagem, email ou WhatsApp.",
       clienteId: null,
+      // Quiz de exemplo: conclusão exige passar (notaMinima padrão 70%).
+      perguntas: {
+        create: [
+          {
+            ordem: 0,
+            enunciado: "Você deve reutilizar a mesma senha em vários serviços?",
+            alternativas: {
+              create: [
+                { texto: "Não, cada serviço deve ter uma senha única", correta: true },
+                { texto: "Sim, facilita lembrar", correta: false },
+                { texto: "Só em sites de banco", correta: false },
+                { texto: "Tanto faz", correta: false },
+              ],
+            },
+          },
+          {
+            ordem: 1,
+            enunciado: "O que ajuda a guardar senhas longas e únicas com segurança?",
+            alternativas: {
+              create: [
+                { texto: "Um gerenciador de senhas", correta: true },
+                { texto: "Um post-it no monitor", correta: false },
+                { texto: "Usar sempre 1234", correta: false },
+                { texto: "Mandar para si mesmo no WhatsApp", correta: false },
+              ],
+            },
+          },
+        ],
+      },
     },
   });
   const lgpd = await prisma.treinamento.create({

@@ -1,10 +1,21 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { criarTreinamento } from "@/lib/actions";
+import { BotaoRemover } from "@/components/BotaoRemover";
+import { GerarComIA } from "@/components/GerarComIA";
 
-export default async function TreinamentosPage() {
+export default async function TreinamentosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ erro?: string }>;
+}) {
+  const { erro } = await searchParams;
   const [treinamentos, clientes] = await Promise.all([
     prisma.treinamento.findMany({
-      include: { cliente: true, _count: { select: { atribuicoes: true } } },
+      include: {
+        cliente: true,
+        _count: { select: { atribuicoes: true, perguntas: true } },
+      },
       orderBy: { criadoEm: "desc" },
     }),
     prisma.cliente.findMany({ orderBy: { nome: "asc" } }),
@@ -23,12 +34,31 @@ export default async function TreinamentosPage() {
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                   {t.tipo === "video" ? "Vídeo" : "Texto"}
                 </span>
+                {t.geradoPorIa && (
+                  <span className="rounded bg-violet-100 px-2 py-0.5 text-xs text-violet-700">
+                    IA
+                  </span>
+                )}
+                {t._count.perguntas > 0 && (
+                  <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                    Quiz · {t._count.perguntas}
+                  </span>
+                )}
               </div>
               <p className="mt-0.5 text-sm text-slate-500">{t.descricao}</p>
               <p className="mt-2 text-xs text-slate-400">
                 {t.cliente ? `Cliente: ${t.cliente.nome}` : "Global (todos os clientes)"} ·{" "}
                 {t._count.atribuicoes} atribuição(ões)
               </p>
+              <div className="mt-3 flex items-center gap-4 border-t border-slate-100 pt-3">
+                <Link
+                  href={`/admin/treinamentos/${t.id}/quiz`}
+                  className="text-xs font-medium text-slate-700 hover:underline"
+                >
+                  {t._count.perguntas > 0 ? "Editar quiz" : "+ Adicionar quiz"}
+                </Link>
+                <BotaoRemover treinamentoId={t.id} titulo={t.titulo} />
+              </div>
             </div>
           ))}
           {treinamentos.length === 0 && (
@@ -37,10 +67,20 @@ export default async function TreinamentosPage() {
         </div>
       </div>
 
-      {/* Form criar */}
-      <div>
+      {/* Sidebar: gerar por IA + criar manual */}
+      <div className="space-y-6">
+        {erro === "ia" && (
+          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            A geração por IA precisa da variável <code>ANTHROPIC_API_KEY</code> configurada no
+            projeto. Configure e tente de novo.
+          </p>
+        )}
+
+        <GerarComIA clientes={clientes} />
+
+        <div>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Novo treinamento
+          Novo treinamento (manual)
         </h2>
         <form
           action={criarTreinamento}
@@ -87,6 +127,7 @@ export default async function TreinamentosPage() {
             Criar treinamento
           </button>
         </form>
+        </div>
       </div>
     </div>
   );
