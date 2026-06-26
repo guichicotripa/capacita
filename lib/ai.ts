@@ -1,10 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-// Geração de curso por IA. Só funciona com ANTHROPIC_API_KEY configurada;
-// sem a chave, iaDisponivel() retorna false e a UI mostra o aviso.
+// Geração de curso por IA. Só funciona com a chave da Anthropic configurada;
+// aceita o nome padrão ANTHROPIC_API_KEY ou ANTHROPIC_KEY. Sem chave,
+// iaDisponivel() retorna false e a UI mostra o aviso.
+
+function anthropicKey(): string | undefined {
+  return process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_KEY;
+}
 
 export function iaDisponivel(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return Boolean(anthropicKey());
 }
 
 export type CursoGerado = {
@@ -52,13 +57,18 @@ function extrairJson(texto: string): string {
 }
 
 export async function gerarCursoIA(tema: string): Promise<CursoGerado> {
-  const client = new Anthropic(); // lê ANTHROPIC_API_KEY do ambiente
+  const client = new Anthropic({ apiKey: anthropicKey() });
 
   const response = await client.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 8000,
     messages: [{ role: "user", content: PROMPT(tema) }],
   });
+
+  // Log de uso de tokens (entra/sai) — útil para acompanhar custo por geração.
+  console.log(
+    `[IA] curso "${tema}" — input=${response.usage.input_tokens} output=${response.usage.output_tokens} tokens`
+  );
 
   const bloco = response.content.find((b) => b.type === "text");
   const texto = bloco && bloco.type === "text" ? bloco.text : "{}";

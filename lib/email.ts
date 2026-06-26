@@ -18,7 +18,7 @@ export async function notificar(opts: {
   assunto?: string;
 }) {
   const { atribuicaoId, tipo, mensagem, emailDestino, assunto } = opts;
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.RESEND_API_KEY || process.env.Resend_key;
   let canal = "simulado";
 
   if (apiKey && emailDestino) {
@@ -56,5 +56,5 @@ export async function notificar(opts: {
 
 // Indica se o envio real de email esta ativo (chave configurada).
 export function emailRealAtivo(): boolean {
-  return Boolean(process.env.RESEND_API_KEY);
+  return Boolean(process.env.RESEND_API_KEY || process.env.Resend_key);
 }
