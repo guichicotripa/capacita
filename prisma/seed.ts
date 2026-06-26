@@ -75,13 +75,43 @@ async function main() {
     data: {
       titulo: "Boas Práticas de Senhas",
       descricao: "Por que não reutilizar senhas e como usar um gerenciador.",
-      tipo: "texto",
-      corpo:
-        "Nunca reutilize a mesma senha em serviços diferentes.\n\n" +
-        "Use um gerenciador de senhas para gerar e guardar senhas longas e únicas.\n\n" +
-        "Ative a verificação em duas etapas (2FA) sempre que possível.\n\n" +
-        "Nunca compartilhe senhas por mensagem, email ou WhatsApp.",
+      tipo: "slides",
       clienteId: null,
+      // Conteúdo em slides (apresentação navegável).
+      slides: {
+        create: [
+          {
+            ordem: 0,
+            titulo: "Por que senhas importam",
+            conteudo:
+              "A senha é a primeira barreira contra invasores.\nUma senha fraca ou repetida coloca toda a empresa em risco.\nVazamentos acontecem o tempo todo, e senhas reutilizadas são testadas em vários serviços.",
+          },
+          {
+            ordem: 1,
+            titulo: "Nunca reutilize senhas",
+            conteudo:
+              "Cada serviço deve ter uma senha única.\nSe um site vazar, os outros continuam seguros.\nReaproveitar a mesma senha é o erro mais comum e mais perigoso.",
+          },
+          {
+            ordem: 2,
+            titulo: "Use um gerenciador de senhas",
+            conteudo:
+              "Ele gera e guarda senhas longas e únicas para você.\nVocê só precisa lembrar de uma senha mestra.\nExemplos: Bitwarden, 1Password, KeePass.",
+          },
+          {
+            ordem: 3,
+            titulo: "Ative a verificação em duas etapas",
+            conteudo:
+              "2FA adiciona um código além da senha.\nMesmo que a senha vaze, o invasor não entra sem o segundo fator.\nUse um app autenticador sempre que possível.",
+          },
+          {
+            ordem: 4,
+            titulo: "Na prática",
+            conteudo:
+              "Nunca compartilhe senhas por mensagem, email ou WhatsApp.\nDesconfie de qualquer um que peça sua senha.\nEm caso de suspeita de vazamento, troque a senha e avise o time de segurança.",
+          },
+        ],
+      },
       // Quiz de exemplo: conclusão exige passar (notaMinima padrão 70%).
       perguntas: {
         create: [

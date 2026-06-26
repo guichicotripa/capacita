@@ -15,7 +15,7 @@ export function iaDisponivel(): boolean {
 export type CursoGerado = {
   titulo: string;
   descricao: string;
-  corpo: string;
+  slides: { titulo: string; conteudo: string }[];
   perguntas: {
     enunciado: string;
     alternativas: { texto: string; correta: boolean }[];
@@ -34,7 +34,12 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem comentários) nest
 {
   "titulo": "string curta",
   "descricao": "uma frase resumindo o treinamento",
-  "corpo": "conteúdo didático em português, 3 a 6 parágrafos separados por uma linha em branco, linguagem clara para funcionários não técnicos",
+  "slides": [
+    {
+      "titulo": "título curto do slide",
+      "conteudo": "3 a 5 tópicos curtos, um por linha (separados por \\n), em linguagem clara para funcionários não técnicos"
+    }
+  ],
   "perguntas": [
     {
       "enunciado": "string",
@@ -48,6 +53,9 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem comentários) nest
   ]
 }
 
+O treinamento é uma apresentação que o aluno passa slide a slide.
+Gere de 5 a 7 slides, cada um com um título e 3 a 5 tópicos curtos (bullets), um por linha.
+O primeiro slide é uma introdução ao tema; o último, um resumo do que fazer na prática.
 Gere exatamente 4 perguntas, cada uma com 4 alternativas e EXATAMENTE uma correta.
 Tudo em português do Brasil.`;
 
@@ -79,7 +87,7 @@ export async function gerarCursoIA(tema: string, fonte?: string): Promise<CursoG
   const curso = JSON.parse(extrairJson(texto)) as CursoGerado;
 
   // Validação mínima do que a IA devolveu.
-  if (!curso.titulo || !Array.isArray(curso.perguntas)) {
+  if (!curso.titulo || !Array.isArray(curso.slides) || !Array.isArray(curso.perguntas)) {
     throw new Error("Resposta da IA em formato inesperado.");
   }
   return curso;

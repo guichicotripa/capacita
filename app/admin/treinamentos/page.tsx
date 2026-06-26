@@ -32,7 +32,7 @@ export default async function TreinamentosPage({
               <div className="flex items-center gap-2">
                 <h2 className="font-medium">{t.titulo}</h2>
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                  {t.tipo === "video" ? "Vídeo" : "Texto"}
+                  {t.tipo === "video" ? "Vídeo" : t.tipo === "slides" ? "Slides" : "Texto"}
                 </span>
                 {t.geradoPorIa && (
                   <span className="rounded bg-violet-100 px-2 py-0.5 text-xs text-violet-700">

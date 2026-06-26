@@ -17,16 +17,22 @@ import { iaDisponivel, gerarCursoIA, type CursoGerado } from "./ai";
 import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 import { extrairTextoPptx } from "./pptx";
 
-// Cria um treinamento + quiz a partir de um curso gerado (helper interno).
+// Cria um treinamento em slides + quiz a partir de um curso gerado (helper interno).
 async function persistirCurso(curso: CursoGerado, clienteIdRaw: string) {
   return prisma.treinamento.create({
     data: {
       titulo: curso.titulo,
       descricao: curso.descricao,
-      tipo: "texto",
-      corpo: curso.corpo,
+      tipo: "slides",
       clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
       geradoPorIa: true,
+      slides: {
+        create: curso.slides.map((s, i) => ({
+          ordem: i,
+          titulo: s.titulo,
+          conteudo: s.conteudo,
+        })),
+      },
       perguntas: {
         create: curso.perguntas.map((p, i) => ({
           enunciado: p.enunciado,

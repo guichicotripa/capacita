@@ -32,22 +32,39 @@ model Usuario {
   mfaSecret   String? // segredo TOTP (base32); setado ao iniciar a ativação
   mfaAtivo    Boolean      @default(false) // 2FA confirmado e exigido no login
   criadoEm    DateTime     @default(now())
+
+  @@index([clienteId])
 }
 
 model Treinamento {
   id          Int          @id @default(autoincrement())
   titulo      String
   descricao   String
-  tipo        String // "video" | "texto"
+  tipo        String // "video" | "texto" | "slides"
   conteudoUrl String? // URL de embed quando tipo = video
   corpo       String? // texto/markdown simples quando tipo = texto
   clienteId   Int? // null = treinamento global (vale para todos os clientes)
   cliente     Cliente?     @relation(fields: [clienteId], references: [id])
   atribuicoes Atribuicao[]
   perguntas   Pergunta[] // quiz opcional; se houver perguntas, concluir exige passar
+  slides      Slide[] // conteudo em slides quando tipo = slides
   notaMinima  Int          @default(70) // % minimo de acerto para concluir
   geradoPorIa Boolean      @default(false)
   criadoEm    DateTime     @default(now())
+
+  @@index([clienteId])
+}
+
+// Um slide de um treinamento em formato apresentação (deck navegável).
+model Slide {
+  id            Int         @id @default(autoincrement())
+  treinamentoId Int
+  treinamento   Treinamento @relation(fields: [treinamentoId], references: [id], onDelete: Cascade)
+  ordem         Int         @default(0)
+  titulo        String
+  conteudo      String // tópicos separados por quebra de linha
+
+  @@index([treinamentoId])
 }
 
 // Pergunta de multipla escolha do quiz de um treinamento.
@@ -58,6 +75,8 @@ model Pergunta {
   enunciado     String
   ordem         Int           @default(0)
   alternativas  Alternativa[]
+
+  @@index([treinamentoId])
 }
 
 model Alternativa {
@@ -66,6 +85,8 @@ model Alternativa {
   pergunta   Pergunta @relation(fields: [perguntaId], references: [id], onDelete: Cascade)
   texto      String
   correta    Boolean  @default(false)
+
+  @@index([perguntaId])
 }
 
 model Atribuicao {
@@ -81,6 +102,7 @@ model Atribuicao {
   notificacoes  Notificacao[]
 
   @@unique([treinamentoId, usuarioId])
+  @@index([usuarioId])
 }
 
 // Log das "notificacoes por email" (simuladas no prototipo, reais com RESEND_API_KEY).
@@ -92,4 +114,6 @@ model Notificacao {
   mensagem     String
   canal        String     @default("simulado") // "simulado" | "email"
   enviadoEm    DateTime   @default(now())
+
+  @@index([atribuicaoId])
 }

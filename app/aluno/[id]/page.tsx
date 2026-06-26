@@ -4,6 +4,7 @@ import { getUsuarioAtual } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { statusDe, formatarData } from "@/lib/status";
 import { StatusBadge } from "@/components/StatusBadge";
+import { VisualizadorSlides } from "@/components/VisualizadorSlides";
 import { concluir, submeterQuiz } from "@/lib/actions";
 
 export default async function TreinamentoPage({
@@ -21,7 +22,10 @@ export default async function TreinamentoPage({
     where: { id: Number(id) },
     include: {
       treinamento: {
-        include: { perguntas: { orderBy: { ordem: "asc" }, include: { alternativas: true } } },
+        include: {
+          slides: { orderBy: { ordem: "asc" } },
+          perguntas: { orderBy: { ordem: "asc" }, include: { alternativas: true } },
+        },
       },
     },
   });
@@ -47,9 +51,11 @@ export default async function TreinamentoPage({
       <p className="mt-1 text-sm text-slate-500">{t.descricao}</p>
       <p className="mt-1 text-xs text-slate-400">Prazo: {formatarData(atrib.prazo)}</p>
 
-      <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
-        {t.tipo === "video" && t.conteudoUrl ? (
-          <div className="aspect-video w-full overflow-hidden rounded-md bg-black">
+      <div className="mt-6">
+        {t.tipo === "slides" ? (
+          <VisualizadorSlides slides={t.slides} />
+        ) : t.tipo === "video" && t.conteudoUrl ? (
+          <div className="aspect-video w-full overflow-hidden rounded-md border border-slate-200 bg-black">
             <iframe
               src={t.conteudoUrl}
               className="h-full w-full"
@@ -58,7 +64,7 @@ export default async function TreinamentoPage({
             />
           </div>
         ) : (
-          <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+          <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-700">
             {(t.corpo || "").split("\n\n").map((par, i) => (
               <p key={i}>{par}</p>
             ))}

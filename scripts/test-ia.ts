@@ -14,7 +14,8 @@ async function main() {
   console.log(`\nGerado em ${seg}s`);
   console.log("Título:", curso.titulo);
   console.log("Descrição:", curso.descricao);
-  console.log("Corpo (início):", curso.corpo.slice(0, 160), "...");
+  console.log("Slides:", curso.slides.length);
+  curso.slides.forEach((s, i) => console.log(`  ${i + 1}. ${s.titulo}`));
   console.log("Perguntas:", curso.perguntas.length);
   curso.perguntas.forEach((p, i) => {
     const corretas = p.alternativas.filter((a) => a.correta).length;
