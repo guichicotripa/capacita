@@ -32,7 +32,13 @@ export default async function TreinamentosPage({
               <div className="flex items-center gap-2">
                 <h2 className="font-medium">{t.titulo}</h2>
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                  {t.tipo === "video" ? "Vídeo" : t.tipo === "slides" ? "Slides" : "Texto"}
+                  {t.tipo === "video"
+                    ? "Vídeo"
+                    : t.tipo === "slides"
+                      ? "Slides"
+                      : t.tipo === "arquivo"
+                        ? "Apresentação"
+                        : "Texto"}
                 </span>
                 {t.geradoPorIa && (
                   <span className="rounded bg-violet-100 px-2 py-0.5 text-xs text-violet-700">
@@ -85,6 +91,11 @@ export default async function TreinamentosPage({
           <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
             Não consegui ler texto desse arquivo. Envie um <code>.pptx</code> com conteúdo em
             texto nos slides.
+          </p>
+        )}
+        {erro === "arquivo" && (
+          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Informe um título e um arquivo <code>.pdf</code> ou <code>.pptx</code>.
           </p>
         )}
 

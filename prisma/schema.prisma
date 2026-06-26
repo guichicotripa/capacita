@@ -40,7 +40,7 @@ model Treinamento {
   id          Int          @id @default(autoincrement())
   titulo      String
   descricao   String
-  tipo        String // "video" | "texto" | "slides"
+  tipo        String // "video" | "texto" | "slides" | "arquivo"
   conteudoUrl String? // URL de embed quando tipo = video
   corpo       String? // texto/markdown simples quando tipo = texto
   clienteId   Int? // null = treinamento global (vale para todos os clientes)
@@ -48,11 +48,23 @@ model Treinamento {
   atribuicoes Atribuicao[]
   perguntas   Pergunta[] // quiz opcional; se houver perguntas, concluir exige passar
   slides      Slide[] // conteudo em slides quando tipo = slides
+  arquivo     Arquivo? // PDF/PPTX original quando tipo = arquivo
   notaMinima  Int          @default(70) // % minimo de acerto para concluir
   geradoPorIa Boolean      @default(false)
   criadoEm    DateTime     @default(now())
 
   @@index([clienteId])
+}
+
+// Arquivo original (PDF ou PPTX) mostrado "como está", página por página.
+// Tabela separada de propósito: os bytes não pesam as queries de lista/relatório.
+model Arquivo {
+  id            Int         @id @default(autoincrement())
+  treinamentoId Int         @unique
+  treinamento   Treinamento @relation(fields: [treinamentoId], references: [id], onDelete: Cascade)
+  mime          String // application/pdf | application/vnd.openxmlformats-officedocument.presentationml.presentation
+  nomeOriginal  String
+  dados         Bytes
 }
 
 // Um slide de um treinamento em formato apresentação (deck navegável).

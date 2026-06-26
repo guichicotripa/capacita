@@ -324,6 +324,45 @@ export async function salvarQuiz(formData: FormData) {
   redirect("/admin/treinamentos");
 }
 
+// Admin sobe um PDF ou PPTX para mostrar "como está", página por página.
+export async function subirArquivo(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const arquivo = formData.get("arquivo") as File | null;
+  const titulo = String(formData.get("titulo") || "").trim();
+  const descricao = String(formData.get("descricao") || "").trim();
+  const clienteIdRaw = String(formData.get("clienteId") || "");
+  if (!arquivo || arquivo.size === 0 || !titulo) {
+    redirect("/admin/treinamentos?erro=arquivo");
+  }
+
+  const nome = arquivo!.name.toLowerCase();
+  const ehPdf = nome.endsWith(".pdf");
+  const ehPptx = nome.endsWith(".pptx");
+  if (!ehPdf && !ehPptx) redirect("/admin/treinamentos?erro=arquivo");
+  const mime = ehPdf
+    ? "application/pdf"
+    : "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+  const bytes = Buffer.from(await arquivo!.arrayBuffer());
+
+  await prisma.treinamento.create({
+    data: {
+      titulo,
+      descricao: descricao || arquivo!.name,
+      tipo: "arquivo",
+      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
+      arquivo: {
+        create: { mime, nomeOriginal: arquivo!.name, dados: bytes },
+      },
+    },
+  });
+
+  revalidatePath("/admin/treinamentos");
+  redirect("/admin/treinamentos");
+}
+
 // Admin remove (cancela) um treinamento. A cascata do banco apaga atribuicoes,
 // notificacoes e o quiz vinculados.
 export async function removerTreinamento(formData: FormData) {

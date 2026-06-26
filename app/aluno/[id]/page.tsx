@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { statusDe, formatarData } from "@/lib/status";
 import { StatusBadge } from "@/components/StatusBadge";
 import { VisualizadorSlides } from "@/components/VisualizadorSlides";
+import { VisualizadorArquivo } from "@/components/VisualizadorArquivo";
 import { concluir, submeterQuiz } from "@/lib/actions";
 
 export default async function TreinamentoPage({
@@ -24,6 +25,7 @@ export default async function TreinamentoPage({
       treinamento: {
         include: {
           slides: { orderBy: { ordem: "asc" } },
+          arquivo: { select: { mime: true } },
           perguntas: { orderBy: { ordem: "asc" }, include: { alternativas: true } },
         },
       },
@@ -52,7 +54,9 @@ export default async function TreinamentoPage({
       <p className="mt-1 text-xs text-slate-400">Prazo: {formatarData(atrib.prazo)}</p>
 
       <div className="mt-6">
-        {t.tipo === "slides" ? (
+        {t.tipo === "arquivo" && t.arquivo ? (
+          <VisualizadorArquivo treinamentoId={t.id} mime={t.arquivo.mime} />
+        ) : t.tipo === "slides" ? (
           <VisualizadorSlides slides={t.slides} />
         ) : t.tipo === "video" && t.conteudoUrl ? (
           <div className="aspect-video w-full overflow-hidden rounded-md border border-slate-200 bg-black">

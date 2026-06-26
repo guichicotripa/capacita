@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { VisualizadorSlides } from "@/components/VisualizadorSlides";
+import { VisualizadorArquivo } from "@/components/VisualizadorArquivo";
 
 // Pré-visualização do treinamento pelo admin, sem precisar atribuir a um aluno.
 export default async function PreviewPage({
@@ -14,6 +15,7 @@ export default async function PreviewPage({
     where: { id: Number(id) },
     include: {
       slides: { orderBy: { ordem: "asc" } },
+      arquivo: { select: { mime: true } },
       perguntas: { orderBy: { ordem: "asc" }, include: { alternativas: true } },
     },
   });
@@ -34,7 +36,9 @@ export default async function PreviewPage({
 
       {/* Conteúdo, como o aluno vê */}
       <div className="mt-6">
-        {t.tipo === "slides" ? (
+        {t.tipo === "arquivo" && t.arquivo ? (
+          <VisualizadorArquivo treinamentoId={t.id} mime={t.arquivo.mime} />
+        ) : t.tipo === "slides" ? (
           <VisualizadorSlides slides={t.slides} />
         ) : t.tipo === "video" && t.conteudoUrl ? (
           <div className="aspect-video w-full overflow-hidden rounded-md border border-slate-200 bg-black">
