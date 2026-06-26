@@ -40,6 +40,21 @@ export default async function TreinamentoPage({
   const t = atrib.treinamento;
   const temQuiz = t.perguntas.length > 0;
 
+  // O quiz vira a última página do deck quando o conteúdo é deck (slides ou PDF).
+  const ehPdf = t.tipo === "arquivo" && t.arquivo?.mime === "application/pdf";
+  const quizNoDeck = temQuiz && status !== "concluido" && (t.tipo === "slides" || ehPdf);
+  const quizData = quizNoDeck
+    ? {
+        atribuicaoId: atrib.id,
+        notaMinima: t.notaMinima,
+        perguntas: t.perguntas.map((p) => ({
+          id: p.id,
+          enunciado: p.enunciado,
+          alternativas: p.alternativas.map((a) => ({ id: a.id, texto: a.texto })),
+        })),
+      }
+    : null;
+
   return (
     <div className="mx-auto max-w-3xl">
       <Link href="/aluno" className="text-sm text-slate-500 hover:underline">
@@ -55,9 +70,9 @@ export default async function TreinamentoPage({
 
       <div className="mt-6">
         {t.tipo === "arquivo" && t.arquivo ? (
-          <VisualizadorArquivo treinamentoId={t.id} mime={t.arquivo.mime} />
+          <VisualizadorArquivo treinamentoId={t.id} mime={t.arquivo.mime} quiz={quizData} />
         ) : t.tipo === "slides" ? (
-          <VisualizadorSlides slides={t.slides} />
+          <VisualizadorSlides slides={t.slides} quiz={quizData} />
         ) : t.tipo === "video" && t.conteudoUrl ? (
           <div className="aspect-video w-full overflow-hidden rounded-md border border-slate-200 bg-black">
             <iframe
@@ -91,13 +106,13 @@ export default async function TreinamentoPage({
         </div>
       )}
 
-      {/* Conclusão: por quiz (se houver) ou sistema de honra */}
+      {/* Conclusão. Em deck (slides/PDF) o quiz já está na última página. */}
       {status === "concluido" ? (
         <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 text-sm text-green-700">
           ✓ Concluído em {formatarData(atrib.concluidoEm!)}
           {atrib.nota !== null && ` · nota ${atrib.nota}%`}
         </div>
-      ) : temQuiz ? (
+      ) : quizNoDeck ? null : temQuiz ? (
         <form
           action={submeterQuiz}
           className="mt-6 space-y-5 rounded-lg border border-slate-200 bg-white p-6"

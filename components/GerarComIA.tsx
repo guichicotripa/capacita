@@ -80,7 +80,9 @@ export function GerarComIA({ clientes }: { clientes: { id: number; nome: string 
           <SelectCliente clientes={clientes} />
           <Botao rotulo="📎 Subir e mostrar como está" pendingRotulo="Subindo…" cor="slate" />
           <p className="text-xs text-slate-500">
-            Mostra cada página/slide exatamente como no arquivo. O quiz você adiciona depois.
+            Mostra cada página exatamente como no arquivo. <strong>PDF é o recomendado</strong>{" "}
+            (PowerPoint → Salvar como PDF). O <code>.pptx</code> pode não renderizar em alguns
+            arquivos. O quiz você adiciona depois (vira a última página).
           </p>
         </form>
       </div>

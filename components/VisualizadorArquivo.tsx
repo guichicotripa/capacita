@@ -1,24 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { PaginaQuiz } from "./PaginaQuiz";
+
+type Quiz = {
+  atribuicaoId: number;
+  notaMinima: number;
+  perguntas: { id: number; enunciado: string; alternativas: { id: number; texto: string }[] }[];
+};
 
 // Mostra o PDF ou PPTX original "como está", página por página.
+// No PDF, se houver quiz, ele vira a última página.
 export function VisualizadorArquivo({
   treinamentoId,
   mime,
+  quiz,
 }: {
   treinamentoId: number;
   mime: string;
+  quiz?: Quiz | null;
 }) {
   return mime === "application/pdf" ? (
-    <VisualizadorPdf treinamentoId={treinamentoId} />
+    <VisualizadorPdf treinamentoId={treinamentoId} quiz={quiz} />
   ) : (
     <VisualizadorPptx treinamentoId={treinamentoId} />
   );
 }
 
 // --- PDF: renderiza cada página num canvas com pdf.js ---
-function VisualizadorPdf({ treinamentoId }: { treinamentoId: number }) {
+function VisualizadorPdf({ treinamentoId, quiz }: { treinamentoId: number; quiz?: Quiz | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfRef = useRef<any>(null);
@@ -60,7 +70,7 @@ function VisualizadorPdf({ treinamentoId }: { treinamentoId: number }) {
     (async () => {
       const pdf = pdfRef.current;
       const canvas = canvasRef.current;
-      if (!pdf || !canvas) return;
+      if (!pdf || !canvas || pag > total) return; // pag > total = página de quiz
       const page = await pdf.getPage(pag);
       // Renderiza em alta resolução fixa; o CSS (max-w-full h-auto) encaixa no container.
       const base = page.getViewport({ scale: 1 });
@@ -74,20 +84,33 @@ function VisualizadorPdf({ treinamentoId }: { treinamentoId: number }) {
 
   if (erro) return <Aviso texto={erro} />;
 
+  const temQuiz = Boolean(quiz);
+  const totalNav = total + (temQuiz ? 1 : 0);
+  const naQuiz = temQuiz && pag > total;
+
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <div className="flex min-h-[280px] items-center justify-center bg-slate-50 p-3">
-        {carregando ? (
-          <p className="text-sm text-slate-400">Carregando…</p>
-        ) : (
-          <canvas ref={canvasRef} className="h-auto max-w-full rounded shadow-sm" />
-        )}
-      </div>
+      {naQuiz ? (
+        <PaginaQuiz
+          atribuicaoId={quiz!.atribuicaoId}
+          notaMinima={quiz!.notaMinima}
+          perguntas={quiz!.perguntas}
+        />
+      ) : (
+        <div className="flex min-h-[280px] items-center justify-center bg-slate-50 p-3">
+          {carregando ? (
+            <p className="text-sm text-slate-400">Carregando…</p>
+          ) : (
+            <canvas ref={canvasRef} className="h-auto max-w-full rounded shadow-sm" />
+          )}
+        </div>
+      )}
       <Navegacao
         pag={pag}
-        total={total}
+        total={totalNav}
+        rotuloProximo={temQuiz && pag === total ? "Ir para avaliação →" : "Próximo →"}
         onAnterior={() => setPag((p) => Math.max(1, p - 1))}
-        onProximo={() => setPag((p) => Math.min(total, p + 1))}
+        onProximo={() => setPag((p) => Math.min(totalNav, p + 1))}
       />
     </div>
   );
@@ -155,11 +178,13 @@ function Navegacao({
   total,
   onAnterior,
   onProximo,
+  rotuloProximo = "Próximo →",
 }: {
   pag: number;
   total: number;
   onAnterior: () => void;
   onProximo: () => void;
+  rotuloProximo?: string;
 }) {
   return (
     <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3">
@@ -178,7 +203,7 @@ function Navegacao({
         disabled={pag >= total}
         className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40"
       >
-        Próximo →
+        {rotuloProximo}
       </button>
     </div>
   );
