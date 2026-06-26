@@ -29,6 +29,8 @@ model Usuario {
   clienteId   Int?
   cliente     Cliente?     @relation(fields: [clienteId], references: [id])
   atribuicoes Atribuicao[]
+  mfaSecret   String? // segredo TOTP (base32); setado ao iniciar a ativação
+  mfaAtivo    Boolean      @default(false) // 2FA confirmado e exigido no login
   criadoEm    DateTime     @default(now())
 }
 

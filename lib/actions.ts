@@ -4,10 +4,17 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./db";
 import { verificarSenha } from "./password";
-import { criarSessao, encerrarSessao, getUsuarioAtual } from "./auth";
+import {
+  criarSessao,
+  encerrarSessao,
+  getUsuarioAtual,
+  criarMfaPendente,
+  getMfaPendente,
+} from "./auth";
 import { statusDe } from "./status";
 import { notificar } from "./email";
 import { iaDisponivel, gerarCursoIA } from "./ai";
+import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
@@ -18,13 +25,79 @@ export async function login(formData: FormData) {
     redirect("/login?erro=1");
   }
 
-  await criarSessao(usuario.id);
-  redirect(usuario.papel === "admin" ? "/admin" : "/aluno");
+  // Se o usuário tem 2FA ativo, exige o código antes de abrir a sessão.
+  if (usuario!.mfaAtivo) {
+    await criarMfaPendente(usuario!.id);
+    redirect("/login/mfa");
+  }
+
+  await criarSessao(usuario!.id);
+  redirect(usuario!.papel === "admin" ? "/admin" : "/aluno");
+}
+
+// Passo 2 do login: valida o código TOTP do usuário com MFA pendente.
+export async function verificarMfaLogin(formData: FormData) {
+  const uid = await getMfaPendente();
+  if (!uid) redirect("/login");
+
+  const usuario = await prisma.usuario.findUnique({ where: { id: uid! } });
+  if (!usuario || !usuario.mfaSecret) redirect("/login");
+
+  const codigo = String(formData.get("codigo") || "");
+  if (!verificarCodigoMfa(codigo, usuario!.mfaSecret!)) {
+    redirect("/login/mfa?erro=1");
+  }
+
+  await criarSessao(usuario!.id);
+  redirect(usuario!.papel === "admin" ? "/admin" : "/aluno");
 }
 
 export async function logout() {
   await encerrarSessao();
   redirect("/login");
+}
+
+// Inicia a ativação do 2FA: gera e salva o segredo (ainda não exigido no login).
+export async function iniciarMfa() {
+  const usuario = await getUsuarioAtual();
+  if (!usuario) redirect("/login");
+  const segredo = gerarSegredoMfa();
+  await prisma.usuario.update({
+    where: { id: usuario!.id },
+    data: { mfaSecret: segredo, mfaAtivo: false },
+  });
+  revalidatePath("/conta");
+  redirect("/conta");
+}
+
+// Confirma o 2FA: valida o primeiro código e passa a exigir no login.
+export async function confirmarMfa(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario) redirect("/login");
+  if (!usuario!.mfaSecret) redirect("/conta");
+
+  const codigo = String(formData.get("codigo") || "");
+  if (!verificarCodigoMfa(codigo, usuario!.mfaSecret!)) {
+    redirect("/conta?erro=1");
+  }
+  await prisma.usuario.update({
+    where: { id: usuario!.id },
+    data: { mfaAtivo: true },
+  });
+  revalidatePath("/conta");
+  redirect("/conta?ok=1");
+}
+
+// Desativa o 2FA.
+export async function desativarMfa() {
+  const usuario = await getUsuarioAtual();
+  if (!usuario) redirect("/login");
+  await prisma.usuario.update({
+    where: { id: usuario!.id },
+    data: { mfaAtivo: false, mfaSecret: null },
+  });
+  revalidatePath("/conta");
+  redirect("/conta");
 }
 
 // Aluno marca um treinamento SEM quiz como concluido (sistema de honra).

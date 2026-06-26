@@ -23,7 +23,9 @@ export function Header({
           <nav className="flex gap-4 text-sm text-slate-600">{children}</nav>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-slate-500">{nome}</span>
+          <Link href="/conta" className="text-slate-500 hover:text-slate-900">
+            {nome}
+          </Link>
           <form action={logout}>
             <button className="rounded border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50">
               Sair
