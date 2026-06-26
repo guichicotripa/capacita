@@ -71,8 +71,14 @@ export default async function TreinamentosPage({
       <div className="space-y-6">
         {erro === "ia" && (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            A geração por IA precisa da variável <code>ANTHROPIC_API_KEY</code> configurada no
-            projeto. Configure e tente de novo.
+            A geração por IA precisa da chave da Anthropic configurada no projeto. Configure e
+            tente de novo.
+          </p>
+        )}
+        {erro === "ppt" && (
+          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Não consegui ler texto desse arquivo. Envie um <code>.pptx</code> com conteúdo em
+            texto nos slides.
           </p>
         )}
 

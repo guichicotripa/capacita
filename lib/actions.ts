@@ -13,8 +13,32 @@ import {
 } from "./auth";
 import { statusDe } from "./status";
 import { notificar } from "./email";
-import { iaDisponivel, gerarCursoIA } from "./ai";
+import { iaDisponivel, gerarCursoIA, type CursoGerado } from "./ai";
 import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
+import { extrairTextoPptx } from "./pptx";
+
+// Cria um treinamento + quiz a partir de um curso gerado (helper interno).
+async function persistirCurso(curso: CursoGerado, clienteIdRaw: string) {
+  return prisma.treinamento.create({
+    data: {
+      titulo: curso.titulo,
+      descricao: curso.descricao,
+      tipo: "texto",
+      corpo: curso.corpo,
+      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
+      geradoPorIa: true,
+      perguntas: {
+        create: curso.perguntas.map((p, i) => ({
+          enunciado: p.enunciado,
+          ordem: i,
+          alternativas: {
+            create: p.alternativas.map((a) => ({ texto: a.texto, correta: a.correta })),
+          },
+        })),
+      },
+    },
+  });
+}
 
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
@@ -203,26 +227,42 @@ export async function gerarTreinamentoIA(formData: FormData) {
     redirect("/admin/treinamentos?erro=ia");
   }
 
-  await prisma.treinamento.create({
-    data: {
-      titulo: curso!.titulo,
-      descricao: curso!.descricao,
-      tipo: "texto",
-      corpo: curso!.corpo,
-      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
-      geradoPorIa: true,
-      perguntas: {
-        create: curso!.perguntas.map((p, i) => ({
-          enunciado: p.enunciado,
-          ordem: i,
-          alternativas: {
-            create: p.alternativas.map((a) => ({ texto: a.texto, correta: a.correta })),
-          },
-        })),
-      },
-    },
-  });
+  await persistirCurso(curso!, clienteIdRaw);
+  revalidatePath("/admin/treinamentos");
+  redirect("/admin/treinamentos");
+}
 
+// Admin sobe um .pptx; extraímos o texto e a IA monta o curso + quiz.
+export async function gerarCursoDePPT(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+  if (!iaDisponivel()) redirect("/admin/treinamentos?erro=ia");
+
+  const arquivo = formData.get("arquivo") as File | null;
+  const clienteIdRaw = String(formData.get("clienteId") || "");
+  if (!arquivo || arquivo.size === 0) redirect("/admin/treinamentos?erro=ppt");
+
+  let texto: string;
+  try {
+    const buffer = Buffer.from(await arquivo!.arrayBuffer());
+    texto = await extrairTextoPptx(buffer);
+  } catch (e) {
+    console.error("Falha ao ler o PPT:", e);
+    redirect("/admin/treinamentos?erro=ppt");
+  }
+  if (!texto! || texto!.length < 30) {
+    redirect("/admin/treinamentos?erro=ppt");
+  }
+
+  let curso;
+  try {
+    curso = await gerarCursoIA("(a partir da apresentação enviada)", texto!);
+  } catch (e) {
+    console.error("Falha na geração por IA:", e);
+    redirect("/admin/treinamentos?erro=ia");
+  }
+
+  await persistirCurso(curso!, clienteIdRaw);
   revalidatePath("/admin/treinamentos");
   redirect("/admin/treinamentos");
 }
