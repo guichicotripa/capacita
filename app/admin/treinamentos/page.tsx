@@ -52,6 +52,12 @@ export default async function TreinamentosPage({
               </p>
               <div className="mt-3 flex items-center gap-4 border-t border-slate-100 pt-3">
                 <Link
+                  href={`/admin/treinamentos/${t.id}/preview`}
+                  className="text-xs font-medium text-slate-700 hover:underline"
+                >
+                  Pré-visualizar
+                </Link>
+                <Link
                   href={`/admin/treinamentos/${t.id}/quiz`}
                   className="text-xs font-medium text-slate-700 hover:underline"
                 >
