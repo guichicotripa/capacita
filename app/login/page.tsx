@@ -53,11 +53,6 @@ export default async function LoginPage({
           </button>
         </form>
 
-        <div className="mt-6 rounded-md bg-slate-50 p-3 text-xs text-slate-500">
-          <p className="font-medium text-slate-600">Contas de demonstração:</p>
-          <p>Admin: admin@platinum.com / admin123</p>
-          <p>Aluno: ana@acme.com / aluno123</p>
-        </div>
       </div>
     </main>
   );
