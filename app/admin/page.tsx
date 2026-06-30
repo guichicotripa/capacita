@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { statusDe, formatarData } from "@/lib/status";
 import { StatusBadge } from "@/components/StatusBadge";
+import { BotaoDesatribuir } from "@/components/BotaoDesatribuir";
 
 export default async function RelatorioPage({
   searchParams,
@@ -72,6 +73,7 @@ export default async function RelatorioPage({
               <th className="px-4 py-3 font-medium">Treinamento</th>
               <th className="px-4 py-3 font-medium">Prazo</th>
               <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -84,11 +86,18 @@ export default async function RelatorioPage({
                 <td className="px-4 py-3">
                   <StatusBadge status={a.status} />
                 </td>
+                <td className="px-4 py-3 text-right">
+                  <BotaoDesatribuir
+                    atribuicaoId={a.id}
+                    aluno={a.usuario.nome}
+                    treinamento={a.treinamento.titulo}
+                  />
+                </td>
               </tr>
             ))}
             {comStatus.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                   Nenhuma atribuição.
                 </td>
               </tr>

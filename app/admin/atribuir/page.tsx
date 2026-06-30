@@ -63,11 +63,15 @@ export default async function AtribuirPage() {
               className={inputCls}
             />
           </Campo>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="jaConcluido" />
+            Já marcar como concluído (sem o aluno precisar fazer)
+          </label>
           <p className="text-xs text-slate-400">
             Ao atribuir, uma notificação de liberação é gerada (email simulado no protótipo).
           </p>
           <button className="w-full rounded-md bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
-            Atribuir e notificar
+            Atribuir
           </button>
         </form>
       </div>

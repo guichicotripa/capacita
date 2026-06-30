@@ -363,6 +363,18 @@ export async function subirArquivo(formData: FormData) {
   redirect("/admin/treinamentos");
 }
 
+// Admin desatribui um treinamento de um aluno (remove a atribuição).
+export async function removerAtribuicao(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const atribuicaoId = Number(formData.get("atribuicaoId"));
+  await prisma.atribuicao.delete({ where: { id: atribuicaoId } });
+
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
 // Admin remove (cancela) um treinamento. A cascata do banco apaga atribuicoes,
 // notificacoes e o quiz vinculados.
 export async function removerTreinamento(formData: FormData) {
@@ -403,6 +415,9 @@ export async function atribuir(formData: FormData) {
   const treinamentoId = Number(formData.get("treinamentoId"));
   const usuarioId = Number(formData.get("usuarioId"));
   const prazo = new Date(String(formData.get("prazo")));
+  // Opção: já registrar como concluído (sem o aluno precisar fazer).
+  const jaConcluido = formData.get("jaConcluido") === "on";
+  const concluidoEm = jaConcluido ? new Date() : null;
 
   const [treinamento, usuario] = await Promise.all([
     prisma.treinamento.findUnique({ where: { id: treinamentoId } }),
@@ -411,15 +426,17 @@ export async function atribuir(formData: FormData) {
 
   const atrib = await prisma.atribuicao.upsert({
     where: { treinamentoId_usuarioId: { treinamentoId, usuarioId } },
-    update: { prazo, concluidoEm: null, nota: null },
-    create: { treinamentoId, usuarioId, prazo },
+    update: { prazo, concluidoEm, nota: null },
+    create: { treinamentoId, usuarioId, prazo, concluidoEm },
   });
 
   await notificar({
     atribuicaoId: atrib.id,
     tipo: "liberacao",
-    mensagem: `Treinamento "${treinamento?.titulo}" liberado. Prazo para concluir: ${prazo.toLocaleDateString("pt-BR")}.`,
-    emailDestino: usuario?.email,
+    mensagem: jaConcluido
+      ? `Treinamento "${treinamento?.titulo}" registrado como concluído.`
+      : `Treinamento "${treinamento?.titulo}" liberado. Prazo para concluir: ${prazo.toLocaleDateString("pt-BR")}.`,
+    emailDestino: jaConcluido ? null : usuario?.email,
     assunto: `Capacita — Novo treinamento: ${treinamento?.titulo}`,
   });
 
