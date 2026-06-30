@@ -9,6 +9,7 @@ export default async function AlunoLayout({
 }) {
   const usuario = await getUsuarioAtual();
   if (!usuario) redirect("/login");
+  if (usuario.senhaTemporaria) redirect("/trocar-senha");
   if (usuario.papel !== "aluno") redirect("/admin");
 
   return (

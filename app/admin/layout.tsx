@@ -10,6 +10,7 @@ export default async function AdminLayout({
 }) {
   const usuario = await getUsuarioAtual();
   if (!usuario) redirect("/login");
+  if (usuario.senhaTemporaria) redirect("/trocar-senha");
   if (usuario.papel !== "admin") redirect("/aluno");
 
   return (
@@ -26,6 +27,9 @@ export default async function AdminLayout({
         </Link>
         <Link href="/admin/clientes" className="hover:text-slate-900">
           Clientes
+        </Link>
+        <Link href="/admin/usuarios" className="hover:text-slate-900">
+          Usuários
         </Link>
       </Header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>

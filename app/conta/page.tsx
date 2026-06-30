@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { getUsuarioAtual } from "@/lib/auth";
 import { Header } from "@/components/Header";
-import { iniciarMfa, confirmarMfa, desativarMfa } from "@/lib/actions";
+import { iniciarMfa, confirmarMfa, desativarMfa, trocarSenha } from "@/lib/actions";
 import { otpauthUrl } from "@/lib/mfa";
 
 export default async function ContaPage({
@@ -87,6 +87,52 @@ export default async function ContaPage({
               </form>
             </>
           )}
+        </div>
+
+        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
+          <h2 className="font-medium">Trocar senha</h2>
+          {ok === "senha" && (
+            <p className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+              Senha alterada.
+            </p>
+          )}
+          {erro && erro !== "1" && (
+            <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+              {erro === "atual"
+                ? "Senha atual incorreta."
+                : erro === "curta"
+                  ? "A nova senha precisa ter ao menos 8 caracteres."
+                  : erro === "confirma"
+                    ? "A confirmação não bate com a nova senha."
+                    : "Não foi possível trocar a senha."}
+            </p>
+          )}
+          <form action={trocarSenha} className="mt-4 space-y-3">
+            <input
+              name="senhaAtual"
+              type="password"
+              required
+              placeholder="Senha atual"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            />
+            <input
+              name="novaSenha"
+              type="password"
+              required
+              placeholder="Nova senha (mín. 8 caracteres)"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            />
+            <input
+              name="confirmar"
+              type="password"
+              required
+              placeholder="Confirmar nova senha"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            />
+            <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+              Trocar senha
+            </button>
+          </form>
         </div>
       </main>
     </>

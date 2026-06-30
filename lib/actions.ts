@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./db";
-import { verificarSenha } from "./password";
+import { verificarSenha, hashSenha } from "./password";
 import {
   criarSessao,
   encerrarSessao,
@@ -12,7 +12,7 @@ import {
   getMfaPendente,
 } from "./auth";
 import { statusDe } from "./status";
-import { notificar } from "./email";
+import { notificar, enviarEmail } from "./email";
 import { iaDisponivel, gerarCursoIA, type CursoGerado } from "./ai";
 import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 import { extrairTextoPptx } from "./pptx";
@@ -442,4 +442,123 @@ export async function atribuir(formData: FormData) {
 
   revalidatePath("/admin");
   redirect("/admin");
+}
+
+// O usuário troca a própria senha. Usado tanto no /conta quanto na troca
+// obrigatória do primeiro acesso (/trocar-senha). Limpa o flag senhaTemporaria.
+export async function trocarSenha(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario) redirect("/login");
+
+  const atual = String(formData.get("senhaAtual") || "");
+  const nova = String(formData.get("novaSenha") || "");
+  const confirmar = String(formData.get("confirmar") || "");
+  const destino = usuario!.senhaTemporaria ? "/trocar-senha" : "/conta";
+
+  if (!verificarSenha(atual, usuario!.senhaHash)) redirect(`${destino}?erro=atual`);
+  if (nova.length < 8) redirect(`${destino}?erro=curta`);
+  if (nova !== confirmar) redirect(`${destino}?erro=confirma`);
+
+  await prisma.usuario.update({
+    where: { id: usuario!.id },
+    data: { senhaHash: hashSenha(nova), senhaTemporaria: false },
+  });
+
+  if (usuario!.senhaTemporaria) {
+    // Acabou de trocar a senha temporária: manda pra home dele.
+    redirect(usuario!.papel === "admin" ? "/admin" : "/aluno");
+  }
+  revalidatePath("/conta");
+  redirect("/conta?ok=senha");
+}
+
+// Admin cria um usuário com senha inicial (que ele troca no 1º acesso) e
+// dispara o email de boas-vindas com o link de acesso.
+export async function criarUsuario(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const nome = String(formData.get("nome") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const papel = String(formData.get("papel") || "aluno") === "admin" ? "admin" : "aluno";
+  const senhaInicial = String(formData.get("senhaInicial") || "");
+  const clienteIdRaw = String(formData.get("clienteId") || "");
+
+  if (!nome || !email || senhaInicial.length < 8) {
+    redirect("/admin/usuarios?erro=dados");
+  }
+  const existe = await prisma.usuario.findUnique({ where: { email } });
+  if (existe) redirect("/admin/usuarios?erro=email");
+
+  await prisma.usuario.create({
+    data: {
+      nome,
+      email,
+      papel,
+      senhaHash: hashSenha(senhaInicial),
+      senhaTemporaria: true,
+      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
+    },
+  });
+
+  const base = process.env.APP_URL || "https://capacita-rust.vercel.app";
+  await enviarEmail(
+    email,
+    "Bem-vindo à Capacita",
+    `Olá, ${nome}.\n\nVocê foi cadastrado na plataforma de treinamentos Capacita.\n\nAcesse: ${base}/login\nEmail: ${email}\nSenha inicial: ${senhaInicial}\n\nPor segurança, vamos pedir para você trocar a senha no primeiro acesso.`
+  );
+
+  revalidatePath("/admin/usuarios");
+  redirect("/admin/usuarios?ok=criado");
+}
+
+// Admin edita nome, email, papel e cliente de um usuário.
+export async function atualizarUsuario(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const id = Number(formData.get("id"));
+  const nome = String(formData.get("nome") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const papel = String(formData.get("papel") || "aluno") === "admin" ? "admin" : "aluno";
+  const clienteIdRaw = String(formData.get("clienteId") || "");
+
+  if (!nome || !email) redirect("/admin/usuarios?erro=dados");
+  // Não deixa colidir com o email de outro usuário.
+  const colide = await prisma.usuario.findFirst({ where: { email, id: { not: id } } });
+  if (colide) redirect("/admin/usuarios?erro=email");
+
+  await prisma.usuario.update({
+    where: { id },
+    data: { nome, email, papel, clienteId: clienteIdRaw ? Number(clienteIdRaw) : null },
+  });
+
+  revalidatePath("/admin/usuarios");
+  redirect("/admin/usuarios?ok=editado");
+}
+
+// Admin redefine a senha de um usuário (define nova + força troca no 1º acesso)
+// e avisa por email.
+export async function redefinirSenha(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const id = Number(formData.get("id"));
+  const novaSenha = String(formData.get("novaSenha") || "");
+  if (novaSenha.length < 8) redirect("/admin/usuarios?erro=curta");
+
+  const alvo = await prisma.usuario.update({
+    where: { id },
+    data: { senhaHash: hashSenha(novaSenha), senhaTemporaria: true },
+  });
+
+  const base = process.env.APP_URL || "https://capacita-rust.vercel.app";
+  await enviarEmail(
+    alvo.email,
+    "Capacita — sua senha foi redefinida",
+    `Olá, ${alvo.nome}.\n\nUm administrador redefiniu sua senha.\n\nAcesse: ${base}/login\nEmail: ${alvo.email}\nSenha temporária: ${novaSenha}\n\nVamos pedir para você trocar a senha no primeiro acesso.`
+  );
+
+  revalidatePath("/admin/usuarios");
+  redirect("/admin/usuarios?ok=senha");
 }

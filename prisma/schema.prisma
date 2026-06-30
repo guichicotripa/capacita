@@ -31,6 +31,7 @@ model Usuario {
   atribuicoes Atribuicao[]
   mfaSecret   String? // segredo TOTP (base32); setado ao iniciar a ativação
   mfaAtivo    Boolean      @default(false) // 2FA confirmado e exigido no login
+  senhaTemporaria Boolean  @default(false) // senha definida pelo admin; força troca no 1º acesso
   criadoEm    DateTime     @default(now())
 
   @@index([clienteId])

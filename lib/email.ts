@@ -1,5 +1,39 @@
 import { prisma } from "./db";
 
+// Envia um email via Resend, se a chave estiver configurada. Retorna true se
+// foi enviado de verdade, false se caiu no modo simulado (sem chave/destino).
+// Não cria registro de Notificacao — serve para emails sem atribuição
+// (boas-vindas, redefinição de senha).
+export async function enviarEmail(
+  emailDestino: string | null | undefined,
+  assunto: string,
+  mensagem: string
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY || process.env.Resend_key;
+  if (!apiKey || !emailDestino) return false;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM || "Capacita <onboarding@resend.dev>",
+        to: emailDestino,
+        subject: assunto,
+        text: mensagem,
+      }),
+    });
+    if (res.ok) return true;
+    console.error("Resend falhou:", res.status, await res.text());
+    return false;
+  } catch (e) {
+    console.error("Erro ao enviar email via Resend:", e);
+    return false;
+  }
+}
+
 export type TipoNotif =
   | "liberacao"
   | "lembrete"
@@ -18,34 +52,13 @@ export async function notificar(opts: {
   assunto?: string;
 }) {
   const { atribuicaoId, tipo, mensagem, emailDestino, assunto } = opts;
-  const apiKey = process.env.RESEND_API_KEY || process.env.Resend_key;
-  let canal = "simulado";
 
-  if (apiKey && emailDestino) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM || "Capacita <onboarding@resend.dev>",
-          to: emailDestino,
-          subject: assunto || "Capacita — Notificação de treinamento",
-          text: mensagem,
-        }),
-      });
-      if (res.ok) {
-        canal = "email";
-      } else {
-        // Nao interrompe o fluxo: registra como simulado e loga o motivo.
-        console.error("Resend falhou:", res.status, await res.text());
-      }
-    } catch (e) {
-      console.error("Erro ao enviar email via Resend:", e);
-    }
-  }
+  const enviado = await enviarEmail(
+    emailDestino,
+    assunto || "Capacita — Notificação de treinamento",
+    mensagem
+  );
+  const canal = enviado ? "email" : "simulado";
 
   await prisma.notificacao.create({
     data: { atribuicaoId, tipo, mensagem, canal },
