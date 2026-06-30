@@ -34,8 +34,16 @@ function VisualizadorPdf({ treinamentoId, quiz }: { treinamentoId: number; quiz?
   const pdfRef = useRef<any>(null);
   const [total, setTotal] = useState(0);
   const [pag, setPag] = useState(1);
+  const [visitados, setVisitados] = useState<Set<number>>(() => new Set([1]));
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+
+  // Marca as páginas já vistas (libera a avaliação só depois de ver todas).
+  useEffect(() => {
+    if (total > 0 && pag <= total) {
+      setVisitados((v) => (v.has(pag) ? v : new Set(v).add(pag)));
+    }
+  }, [pag, total]);
 
   // Carrega o documento uma vez.
   useEffect(() => {
@@ -87,6 +95,9 @@ function VisualizadorPdf({ treinamentoId, quiz }: { treinamentoId: number; quiz?
   const temQuiz = Boolean(quiz);
   const totalNav = total + (temQuiz ? 1 : 0);
   const naQuiz = temQuiz && pag > total;
+  // Só libera a avaliação depois de ver todas as páginas do PDF.
+  const quizLiberado = !temQuiz || (total > 0 && visitados.size >= total);
+  const maxNav = quizLiberado ? totalNav : total;
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -97,20 +108,25 @@ function VisualizadorPdf({ treinamentoId, quiz }: { treinamentoId: number; quiz?
           perguntas={quiz!.perguntas}
         />
       ) : (
-        <div className="flex min-h-[280px] items-center justify-center bg-slate-50 p-3">
+        <div className="flex min-h-[280px] flex-col items-center justify-center bg-slate-50 p-3">
           {carregando ? (
             <p className="text-sm text-slate-400">Carregando…</p>
           ) : (
             <canvas ref={canvasRef} className="h-auto max-w-full rounded shadow-sm" />
           )}
+          {temQuiz && pag === total && !quizLiberado && (
+            <p className="pt-3 text-xs text-amber-600">
+              Veja todas as páginas para liberar a avaliação.
+            </p>
+          )}
         </div>
       )}
       <Navegacao
         pag={pag}
-        total={totalNav}
-        rotuloProximo={temQuiz && pag === total ? "Ir para avaliação →" : "Próximo →"}
+        total={maxNav}
+        rotuloProximo={temQuiz && pag === total && quizLiberado ? "Ir para avaliação →" : "Próximo →"}
         onAnterior={() => setPag((p) => Math.max(1, p - 1))}
-        onProximo={() => setPag((p) => Math.min(totalNav, p + 1))}
+        onProximo={() => setPag((p) => Math.min(maxNav, p + 1))}
       />
     </div>
   );
