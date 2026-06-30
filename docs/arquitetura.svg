@@ -1,0 +1,87 @@
+<svg viewBox="0 0 920 690" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title>Arquitetura do Capacita como concorrente do KnowBe4</title>
+  <desc>Dois motores: Medicao (simulacao de phishing, sensor externo, a construir) e Intervencao (treino curado, IA e gamificacao), conectados por um loop de risco, vendidos como servico pela Platinum e apoiados na espinha de compliance que o Capacita ja tem.</desc>
+
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9a988f"/>
+    </marker>
+    <marker id="arwLoop" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#534AB7"/>
+    </marker>
+  </defs>
+
+  <text x="40" y="34" font-size="22" font-weight="700" fill="#1a1a1a">Capacita - concorrente do KnowBe4</text>
+  <text x="40" y="55" font-size="12.5" fill="#8a877d">Dois motores: medir o risco de verdade, e treinar onde doi.</text>
+
+  <rect x="600" y="24" width="13" height="13" rx="3" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="620" y="35" font-size="11.5" fill="#57534a">Ja temos no Capacita</text>
+  <rect x="755" y="24" width="13" height="13" rx="3" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="775" y="35" font-size="11.5" fill="#57534a">A construir</text>
+
+  <rect x="40" y="78" width="250" height="46" rx="8" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="1.5"/>
+  <text x="165" y="100" font-size="13" font-weight="600" text-anchor="middle" fill="#57534a">Platinum Ciber</text>
+  <text x="165" y="115" font-size="10.5" text-anchor="middle" fill="#8a877d">canal de distribuicao</text>
+  <line x1="290" y1="101" x2="333" y2="101" stroke="#9a988f" stroke-width="1.5" marker-end="url(#arw)"/>
+  <rect x="335" y="78" width="250" height="46" rx="8" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="1.5"/>
+  <text x="460" y="100" font-size="13" font-weight="600" text-anchor="middle" fill="#57534a">Servico gerenciado</text>
+  <text x="460" y="115" font-size="10.5" text-anchor="middle" fill="#8a877d">por usuario / mes</text>
+  <line x1="585" y1="101" x2="628" y2="101" stroke="#9a988f" stroke-width="1.5" marker-end="url(#arw)"/>
+  <rect x="630" y="78" width="250" height="46" rx="8" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="1.5"/>
+  <text x="755" y="100" font-size="13" font-weight="600" text-anchor="middle" fill="#57534a">Empresas LatAm</text>
+  <text x="755" y="115" font-size="10.5" text-anchor="middle" fill="#8a877d">PME e mid-market</text>
+
+  <rect x="120" y="146" width="330" height="44" rx="8" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="1.5"/>
+  <text x="285" y="167" font-size="12.5" font-weight="600" text-anchor="middle" fill="#57534a">Web - obrigatorio</text>
+  <text x="285" y="181" font-size="10.5" text-anchor="middle" fill="#8a877d">no trabalho, equipamento da empresa</text>
+  <rect x="470" y="146" width="330" height="44" rx="8" fill="#F1EFE8" stroke="#D3D1C7" stroke-width="1.5"/>
+  <text x="635" y="167" font-size="12.5" font-weight="600" text-anchor="middle" fill="#57534a">Mobile / PWA - opt-in</text>
+  <text x="635" y="181" font-size="10.5" text-anchor="middle" fill="#8a877d">habito e engajamento</text>
+  <text x="460" y="208" font-size="11" text-anchor="middle" fill="#8a877d">Gamificacao e camada de engajamento, nunca trava de compliance.</text>
+
+  <rect x="60" y="226" width="350" height="232" rx="10" fill="none" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="76" y="250" font-size="15" font-weight="700" fill="#1a1a1a">1 - MEDICAO</text>
+  <text x="76" y="266" font-size="11" fill="#8a877d">sensor externo, objetivo</text>
+  <rect x="76" y="278" width="318" height="48" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="235" y="299" font-size="12.5" font-weight="600" text-anchor="middle" fill="#3C3489">Phishing simulado (email)</text>
+  <text x="235" y="314" font-size="10.5" text-anchor="middle" fill="#6a61c4">ataque controlado, nao depende do funcionario</text>
+  <rect x="76" y="334" width="318" height="48" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="235" y="355" font-size="12.5" font-weight="600" text-anchor="middle" fill="#3C3489">Clicou? digitou? reportou?</text>
+  <text x="235" y="370" font-size="10.5" text-anchor="middle" fill="#6a61c4">telemetria de comportamento real</text>
+  <rect x="76" y="390" width="318" height="48" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="235" y="411" font-size="12.5" font-weight="600" text-anchor="middle" fill="#3C3489">Score de risco - Phish-prone %</text>
+  <text x="235" y="426" font-size="10.5" text-anchor="middle" fill="#6a61c4">por pessoa e por empresa</text>
+
+  <rect x="510" y="226" width="350" height="232" rx="10" fill="none" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="526" y="250" font-size="15" font-weight="700" fill="#1a1a1a">2 - INTERVENCAO</text>
+  <text x="526" y="266" font-size="11" fill="#8a877d">engajamento + IA</text>
+  <rect x="526" y="278" width="318" height="48" rx="8" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="685" y="299" font-size="12.5" font-weight="600" text-anchor="middle" fill="#0F6E56">Curriculo curado</text>
+  <text x="685" y="314" font-size="10.5" text-anchor="middle" fill="#2f8f70">base de qualidade, lanca rapido</text>
+  <rect x="526" y="334" width="318" height="48" rx="8" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="685" y="355" font-size="12.5" font-weight="600" text-anchor="middle" fill="#0F6E56">Micro-licoes por IA</text>
+  <text x="685" y="370" font-size="10.5" text-anchor="middle" fill="#2f8f70">miradas na fraqueza de cada um</text>
+  <rect x="526" y="390" width="318" height="48" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="685" y="411" font-size="12.5" font-weight="600" text-anchor="middle" fill="#3C3489">Gamificacao - XP - ranking</text>
+  <text x="685" y="426" font-size="10.5" text-anchor="middle" fill="#6a61c4">streak, nivel, disputa entre times</text>
+
+  <line x1="412" y1="332" x2="508" y2="332" stroke="#534AB7" stroke-width="2" marker-end="url(#arwLoop)"/>
+  <text x="460" y="324" font-size="10.5" text-anchor="middle" fill="#534AB7" font-weight="600">risco</text>
+  <line x1="508" y1="392" x2="412" y2="392" stroke="#534AB7" stroke-width="2" marker-end="url(#arwLoop)"/>
+  <text x="460" y="384" font-size="10.5" text-anchor="middle" fill="#534AB7" font-weight="600">re-mede</text>
+
+  <text x="40" y="496" font-size="13" font-weight="700" fill="#1a1a1a">Espinha de compliance (Capacita hoje)</text>
+  <rect x="40" y="508" width="250" height="60" rx="8" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="165" y="532" font-size="12.5" font-weight="600" text-anchor="middle" fill="#0F6E56">Atribuir - prazo - corte</text>
+  <text x="165" y="549" font-size="10.5" text-anchor="middle" fill="#2f8f70">acesso cortado ao vencer</text>
+  <rect x="335" y="508" width="250" height="60" rx="8" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="460" y="532" font-size="12.5" font-weight="600" text-anchor="middle" fill="#0F6E56">Fez / nao fez</text>
+  <text x="460" y="549" font-size="10.5" text-anchor="middle" fill="#2f8f70">relatorio por cliente - export CSV</text>
+  <rect x="630" y="508" width="250" height="60" rx="8" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="755" y="528" font-size="12.5" font-weight="600" text-anchor="middle" fill="#0F6E56">Evidencia de auditoria</text>
+  <text x="755" y="544" font-size="10.5" text-anchor="middle" fill="#2f8f70">base pronta, vira</text>
+  <text x="755" y="557" font-size="10.5" text-anchor="middle" fill="#6a61c4">"risco que caiu no tempo"</text>
+
+  <text x="40" y="600" font-size="11.5" fill="#57534a">MVP que a Platinum vende ja = Motor de Medicao basico (phishing por email) + tudo que o Capacita ja faz.</text>
+  <text x="40" y="617" font-size="11.5" fill="#8a877d">Gamificacao, mobile e IA-miradas entram na fase 2 como diferencial. O loop e o que o KnowBe4 cobra caro e em ingles.</text>
+</svg>
