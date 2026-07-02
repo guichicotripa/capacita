@@ -3,13 +3,14 @@ import { prisma } from "@/lib/db";
 import { statusDe, formatarData } from "@/lib/status";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BotaoDesatribuir } from "@/components/BotaoDesatribuir";
+import { enviarLembretesAction } from "@/lib/actions";
 
 export default async function RelatorioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cliente?: string; ok?: string; n?: string }>;
+  searchParams: Promise<{ cliente?: string; ok?: string; n?: string; t?: string; v?: string; a?: string }>;
 }) {
-  const { cliente, ok, n } = await searchParams;
+  const { cliente, ok, n, t: totalLembretes, v: vencLembretes, a: aVencLembretes } = await searchParams;
   const clienteId = cliente ? Number(cliente) : null;
 
   const clientes = await prisma.cliente.findMany({ orderBy: { nome: "asc" } });
@@ -35,6 +36,11 @@ export default async function RelatorioPage({
           <p className="text-sm text-slate-500">Quem fez e quem não fez os treinamentos.</p>
         </div>
         <div className="flex gap-2">
+          <form action={enviarLembretesAction}>
+            <button className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              Enviar lembretes
+            </button>
+          </form>
           <a
             href={`/admin/relatorio/export${clienteId ? `?cliente=${clienteId}` : ""}`}
             className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
@@ -53,6 +59,14 @@ export default async function RelatorioPage({
       {ok === "atribuido" && (
         <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
           Treinamento atribuído a {n ?? ""} aluno(s).
+        </p>
+      )}
+
+      {ok === "lembretes" && (
+        <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          {Number(totalLembretes) > 0
+            ? `${totalLembretes} lembrete(s) enviado(s): ${vencLembretes} vencido(s), ${aVencLembretes} a vencer.`
+            : "Nenhum lembrete a enviar agora (ninguém vencido ou vencendo em breve, ou já avisados hoje)."}
         </p>
       )}
 

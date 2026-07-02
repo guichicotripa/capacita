@@ -13,6 +13,7 @@ import {
 } from "./auth";
 import { statusDe } from "./status";
 import { notificar, enviarEmail } from "./email";
+import { enviarLembretes } from "./lembretes";
 import { iaDisponivel, gerarCursoIA, type CursoGerado } from "./ai";
 import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 import { extrairTextoPptx } from "./pptx";
@@ -507,6 +508,17 @@ export async function atribuir(formData: FormData) {
 
   revalidatePath("/admin");
   redirect(`/admin?ok=atribuido&n=${usuarioIds.length}`);
+}
+
+// Admin dispara os lembretes de prazo manualmente (o mesmo que o cron faz).
+export async function enviarLembretesAction() {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const r = await enviarLembretes();
+
+  revalidatePath("/admin");
+  redirect(`/admin?ok=lembretes&t=${r.total}&v=${r.vencidos}&a=${r.aVencer}`);
 }
 
 // O usuário troca a própria senha. Usado tanto no /conta quanto na troca
