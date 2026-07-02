@@ -185,8 +185,10 @@ export async function submeterQuiz(formData: FormData) {
   if (perguntas.length === 0) redirect(`/aluno/${atribuicaoId}`);
 
   let acertos = 0;
+  const respostas: Record<number, number> = {};
   for (const p of perguntas) {
     const escolhidaId = Number(formData.get(`p_${p.id}`));
+    respostas[p.id] = escolhidaId;
     const correta = p.alternativas.find((a) => a.correta);
     if (correta && correta.id === escolhidaId) acertos++;
   }
@@ -195,7 +197,7 @@ export async function submeterQuiz(formData: FormData) {
 
   await prisma.atribuicao.update({
     where: { id: atribuicaoId },
-    data: { nota, concluidoEm: aprovado ? new Date() : null },
+    data: { nota, concluidoEm: aprovado ? new Date() : null, ultimasRespostas: respostas },
   });
 
   await notificar({
@@ -409,39 +411,102 @@ export async function criarTreinamento(formData: FormData) {
   redirect("/admin/treinamentos");
 }
 
-// Admin atribui um treinamento a um aluno com prazo. Gera a notificacao de
-// liberacao (o "email" simulado).
+// Admin edita um treinamento existente. Título/descrição/cliente para todos os
+// tipos; conteúdo conforme o tipo (URL de vídeo, corpo de texto, ou slides).
+export async function atualizarTreinamento(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const id = Number(formData.get("id"));
+  const titulo = String(formData.get("titulo") || "").trim();
+  const descricao = String(formData.get("descricao") || "").trim();
+  const clienteIdRaw = String(formData.get("clienteId") || "");
+  if (!id || !titulo) redirect(`/admin/treinamentos/${id}/editar?erro=dados`);
+
+  const treino = await prisma.treinamento.findUnique({ where: { id } });
+  if (!treino) redirect("/admin/treinamentos");
+
+  await prisma.treinamento.update({
+    where: { id },
+    data: {
+      titulo,
+      descricao,
+      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
+      conteudoUrl: treino!.tipo === "video" ? String(formData.get("conteudoUrl") || "") : treino!.conteudoUrl,
+      corpo: treino!.tipo === "texto" ? String(formData.get("corpo") || "") : treino!.corpo,
+    },
+  });
+
+  // Slides: substitui o deck inteiro pelo que veio do editor (JSON ordenado).
+  if (treino!.tipo === "slides") {
+    let slides: { titulo: string; conteudo: string }[] = [];
+    try {
+      slides = JSON.parse(String(formData.get("slidesJson") || "[]"));
+    } catch {
+      slides = [];
+    }
+    slides = slides.filter((s) => (s.titulo || "").trim() || (s.conteudo || "").trim());
+    await prisma.slide.deleteMany({ where: { treinamentoId: id } });
+    if (slides.length > 0) {
+      await prisma.slide.createMany({
+        data: slides.map((s, i) => ({
+          treinamentoId: id,
+          ordem: i,
+          titulo: (s.titulo || "").trim(),
+          conteudo: (s.conteudo || "").trim(),
+        })),
+      });
+    }
+  }
+
+  revalidatePath("/admin/treinamentos");
+  redirect("/admin/treinamentos?ok=editado");
+}
+
+// Admin atribui um treinamento a um ou vários alunos, com prazo. Gera uma
+// notificacao de liberacao (o "email") para cada um.
 export async function atribuir(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
   const treinamentoId = Number(formData.get("treinamentoId"));
-  const usuarioId = Number(formData.get("usuarioId"));
   const prazo = new Date(String(formData.get("prazo")));
   // Opção: já registrar como concluído (sem o aluno precisar fazer).
   const jaConcluido = formData.get("jaConcluido") === "on";
   const concluidoEm = jaConcluido ? new Date() : null;
 
-  const [treinamento, usuario] = await Promise.all([
-    prisma.treinamento.findUnique({ where: { id: treinamentoId } }),
-    prisma.usuario.findUnique({ where: { id: usuarioId } }),
-  ]);
+  // Aceita seleção múltipla (vários "usuarioIds") ou o campo único legado.
+  const ids = formData.getAll("usuarioIds").map((v) => Number(v)).filter(Boolean);
+  const unico = Number(formData.get("usuarioId"));
+  const usuarioIds = ids.length > 0 ? ids : unico ? [unico] : [];
 
-  const atrib = await prisma.atribuicao.upsert({
-    where: { treinamentoId_usuarioId: { treinamentoId, usuarioId } },
-    update: { prazo, concluidoEm, nota: null },
-    create: { treinamentoId, usuarioId, prazo, concluidoEm },
-  });
+  if (!treinamentoId || usuarioIds.length === 0 || isNaN(prazo.getTime())) {
+    redirect("/admin/atribuir?erro=dados");
+  }
 
-  await notificar({
-    atribuicaoId: atrib.id,
-    tipo: "liberacao",
-    mensagem: jaConcluido
-      ? `Treinamento "${treinamento?.titulo}" registrado como concluído.`
-      : `Treinamento "${treinamento?.titulo}" liberado. Prazo para concluir: ${prazo.toLocaleDateString("pt-BR")}.`,
-    emailDestino: jaConcluido ? null : usuario?.email,
-    assunto: `Capacita — Novo treinamento: ${treinamento?.titulo}`,
-  });
+  const treinamento = await prisma.treinamento.findUnique({ where: { id: treinamentoId } });
+
+  for (const usuarioId of usuarioIds) {
+    const alvo = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+    if (!alvo) continue;
+    const atrib = await prisma.atribuicao.upsert({
+      where: { treinamentoId_usuarioId: { treinamentoId, usuarioId } },
+      update: { prazo, concluidoEm, nota: null },
+      create: { treinamentoId, usuarioId, prazo, concluidoEm },
+    });
+    await notificar({
+      atribuicaoId: atrib.id,
+      tipo: "liberacao",
+      mensagem: jaConcluido
+        ? `Treinamento "${treinamento?.titulo}" registrado como concluído.`
+        : `Treinamento "${treinamento?.titulo}" liberado. Prazo para concluir: ${prazo.toLocaleDateString("pt-BR")}.`,
+      emailDestino: jaConcluido ? null : alvo.email,
+      assunto: `Capacita — Novo treinamento: ${treinamento?.titulo}`,
+    });
+  }
 
   revalidatePath("/admin");
-  redirect("/admin");
+  redirect(`/admin?ok=atribuido&n=${usuarioIds.length}`);
 }
 
 // O usuário troca a própria senha. Usado tanto no /conta quanto na troca

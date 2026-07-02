@@ -7,9 +7,9 @@ import { BotaoDesatribuir } from "@/components/BotaoDesatribuir";
 export default async function RelatorioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cliente?: string }>;
+  searchParams: Promise<{ cliente?: string; ok?: string; n?: string }>;
 }) {
-  const { cliente } = await searchParams;
+  const { cliente, ok, n } = await searchParams;
   const clienteId = cliente ? Number(cliente) : null;
 
   const clientes = await prisma.cliente.findMany({ orderBy: { nome: "asc" } });
@@ -49,6 +49,12 @@ export default async function RelatorioPage({
           </Link>
         </div>
       </div>
+
+      {ok === "atribuido" && (
+        <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          Treinamento atribuído a {n ?? ""} aluno(s).
+        </p>
+      )}
 
       {/* Cards resumo */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -106,6 +106,46 @@ export default async function TreinamentoPage({
         </div>
       )}
 
+      {/* Revisão da avaliação: mostra o que o aluno marcou, o que errou e a resposta certa. */}
+      {temQuiz && atrib.ultimasRespostas && (
+        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
+          <h2 className="font-semibold">Revisão da avaliação</h2>
+          <p className="mt-0.5 text-xs text-slate-400">
+            Em verde a resposta certa; em vermelho o que você marcou errado.
+          </p>
+          {t.perguntas.map((p, i) => {
+            const escolhida = (atrib.ultimasRespostas as Record<string, number>)[p.id];
+            return (
+              <div key={p.id} className="mt-4">
+                <p className="text-sm font-medium text-slate-800">
+                  {i + 1}. {p.enunciado}
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {p.alternativas.map((a) => {
+                    const marcada = a.id === escolhida;
+                    const cor = a.correta
+                      ? "text-green-700"
+                      : marcada
+                        ? "text-red-600"
+                        : "text-slate-600";
+                    const icone = a.correta ? "✓" : marcada ? "✗" : "•";
+                    return (
+                      <li key={a.id} className={`flex gap-2 text-sm ${cor}`}>
+                        <span className="w-3 shrink-0">{icone}</span>
+                        <span>
+                          {a.texto}
+                          {marcada && <span className="text-xs text-slate-400"> (sua resposta)</span>}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Conclusão. Em deck (slides/PDF) o quiz já está na última página. */}
       {status === "concluido" ? (
         <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 text-sm text-green-700">

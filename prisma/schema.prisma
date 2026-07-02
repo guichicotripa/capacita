@@ -112,6 +112,7 @@ model Atribuicao {
   prazo         DateTime
   concluidoEm   DateTime?
   nota          Int? // % de acerto na ultima tentativa do quiz (null = sem quiz / nao tentou)
+  ultimasRespostas Json? // { perguntaId: alternativaId } da ultima tentativa, p/ revisao
   notificacoes  Notificacao[]
 
   @@unique([treinamentoId, usuarioId])

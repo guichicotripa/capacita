@@ -1,21 +1,40 @@
 import { prisma } from "@/lib/db";
 import { atribuir } from "@/lib/actions";
 import { formatarData } from "@/lib/status";
+import { SeletorAlunos } from "@/components/SeletorAlunos";
 
-export default async function AtribuirPage() {
-  const [treinamentos, alunos, notificacoes] = await Promise.all([
+export default async function AtribuirPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ erro?: string }>;
+}) {
+  const { erro } = await searchParams;
+  const [treinamentos, alunos, clientes, notificacoes] = await Promise.all([
     prisma.treinamento.findMany({ orderBy: { titulo: "asc" } }),
     prisma.usuario.findMany({
       where: { papel: "aluno" },
       include: { cliente: true },
       orderBy: { nome: "asc" },
     }),
+    prisma.cliente.findMany({ orderBy: { nome: "asc" } }),
     prisma.notificacao.findMany({
       orderBy: { enviadoEm: "desc" },
       take: 8,
       include: { atribuicao: { include: { usuario: true } } },
     }),
   ]);
+
+  // Agrupa alunos por cliente para o seletor múltiplo.
+  const grupos = [
+    ...clientes.map((c) => ({
+      cliente: c.nome,
+      alunos: alunos.filter((a) => a.clienteId === c.id).map((a) => ({ id: a.id, nome: a.nome })),
+    })),
+    {
+      cliente: "Sem cliente",
+      alunos: alunos.filter((a) => !a.clienteId).map((a) => ({ id: a.id, nome: a.nome })),
+    },
+  ].filter((g) => g.alunos.length > 0);
 
   // Prazo padrão sugerido: 7 dias a partir de agora (formato datetime-local).
   const padrao = new Date();
@@ -26,6 +45,11 @@ export default async function AtribuirPage() {
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <div>
         <h1 className="mb-4 text-xl font-semibold">Atribuir treinamento</h1>
+        {erro === "dados" && (
+          <p className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Selecione um treinamento, pelo menos um aluno e um prazo.
+          </p>
+        )}
         <form
           action={atribuir}
           className="space-y-3 rounded-lg border border-slate-200 bg-white p-4"
@@ -42,18 +66,7 @@ export default async function AtribuirPage() {
               ))}
             </select>
           </Campo>
-          <Campo label="Aluno">
-            <select name="usuarioId" required className={inputCls} defaultValue="">
-              <option value="" disabled>
-                Selecione...
-              </option>
-              {alunos.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.nome} {a.cliente ? `(${a.cliente.nome})` : ""}
-                </option>
-              ))}
-            </select>
-          </Campo>
+          <SeletorAlunos grupos={grupos} />
           <Campo label="Prazo para concluir">
             <input
               name="prazo"

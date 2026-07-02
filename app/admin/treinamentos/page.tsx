@@ -7,9 +7,9 @@ import { GerarComIA } from "@/components/GerarComIA";
 export default async function TreinamentosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string }>;
+  searchParams: Promise<{ erro?: string; ok?: string }>;
 }) {
-  const { erro } = await searchParams;
+  const { erro, ok } = await searchParams;
   const [treinamentos, clientes] = await Promise.all([
     prisma.treinamento.findMany({
       include: {
@@ -26,6 +26,11 @@ export default async function TreinamentosPage({
       {/* Lista */}
       <div>
         <h1 className="mb-4 text-xl font-semibold">Treinamentos</h1>
+        {ok === "editado" && (
+          <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+            Treinamento atualizado.
+          </p>
+        )}
         <div className="grid gap-3">
           {treinamentos.map((t) => (
             <div key={t.id} className="rounded-lg border border-slate-200 bg-white p-4">
@@ -62,6 +67,12 @@ export default async function TreinamentosPage({
                   className="text-xs font-medium text-slate-700 hover:underline"
                 >
                   Pré-visualizar
+                </Link>
+                <Link
+                  href={`/admin/treinamentos/${t.id}/editar`}
+                  className="text-xs font-medium text-slate-700 hover:underline"
+                >
+                  Editar
                 </Link>
                 <Link
                   href={`/admin/treinamentos/${t.id}/quiz`}
