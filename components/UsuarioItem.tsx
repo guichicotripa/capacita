@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { atualizarUsuario, redefinirSenha } from "@/lib/actions";
+import { useDict } from "./I18nProvider";
 
 type Cliente = { id: number; nome: string };
 type Usuario = {
@@ -15,8 +16,10 @@ type Usuario = {
 
 // Linha de usuário com edição inline (infos) e redefinição de senha.
 export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes: Cliente[] }) {
+  const d = useDict();
   const [editando, setEditando] = useState(false);
   const [resetando, setResetando] = useState(false);
+  const rotuloPapel = usuario.papel === "admin" ? d.admin.usuarios.admin : d.admin.usuarios.aluno;
 
   return (
     <div className="px-4 py-3">
@@ -25,11 +28,11 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
           <p className="font-medium text-slate-800">
             {usuario.nome}
             <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-500">
-              {usuario.papel}
+              {rotuloPapel}
             </span>
           </p>
           <p className="text-sm text-slate-500">
-            {usuario.email} · {usuario.clienteNome ?? "sem cliente"}
+            {usuario.email} · {usuario.clienteNome ?? d.admin.usuarios.semCliente}
           </p>
         </div>
         <div className="flex shrink-0 gap-2 text-xs">
@@ -40,7 +43,7 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
             }}
             className="rounded px-2 py-1 font-medium text-slate-600 hover:bg-slate-100"
           >
-            {editando ? "Fechar" : "Editar"}
+            {editando ? d.admin.usuarios.fechar : d.admin.usuarios.editar}
           </button>
           <button
             onClick={() => {
@@ -49,7 +52,7 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
             }}
             className="rounded px-2 py-1 font-medium text-slate-600 hover:bg-slate-100"
           >
-            Redefinir senha
+            {d.admin.usuarios.redefinirSenha}
           </button>
         </div>
       </div>
@@ -61,7 +64,7 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
             name="nome"
             defaultValue={usuario.nome}
             required
-            placeholder="Nome"
+            placeholder={d.admin.usuarios.nome}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           />
           <input
@@ -69,7 +72,7 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
             type="email"
             defaultValue={usuario.email}
             required
-            placeholder="Email"
+            placeholder={d.admin.usuarios.email}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           />
           <select
@@ -77,7 +80,7 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
             defaultValue={usuario.clienteId ?? ""}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           >
-            <option value="">Sem cliente (admin)</option>
+            <option value="">{d.admin.usuarios.semCliente}</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
@@ -89,12 +92,12 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
             defaultValue={usuario.papel}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           >
-            <option value="aluno">Aluno</option>
-            <option value="admin">Admin</option>
+            <option value="aluno">{d.admin.usuarios.aluno}</option>
+            <option value="admin">{d.admin.usuarios.admin}</option>
           </select>
           <div className="sm:col-span-2">
             <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-              Salvar
+              {d.admin.usuarios.salvar}
             </button>
           </div>
         </form>
@@ -107,11 +110,11 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
             name="novaSenha"
             type="text"
             required
-            placeholder="Nova senha (mín. 8)"
+            placeholder={d.admin.usuarios.novaSenhaPh}
             className="grow rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           />
           <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-            Redefinir e avisar por email
+            {d.admin.usuarios.redefinirAvisar}
           </button>
         </form>
       )}

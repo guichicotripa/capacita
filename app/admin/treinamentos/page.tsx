@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { criarTreinamento } from "@/lib/actions";
 import { BotaoRemover } from "@/components/BotaoRemover";
 import { GerarComIA } from "@/components/GerarComIA";
+import { getDict } from "@/lib/i18n-server";
 
 export default async function TreinamentosPage({
   searchParams,
@@ -10,6 +11,7 @@ export default async function TreinamentosPage({
   searchParams: Promise<{ erro?: string; ok?: string }>;
 }) {
   const { erro, ok } = await searchParams;
+  const d = await getDict();
   const [treinamentos, clientes] = await Promise.all([
     prisma.treinamento.findMany({
       include: {
@@ -25,10 +27,10 @@ export default async function TreinamentosPage({
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       {/* Lista */}
       <div>
-        <h1 className="mb-4 text-xl font-semibold">Treinamentos</h1>
+        <h1 className="mb-4 text-xl font-semibold">{d.admin.treinos.titulo}</h1>
         {ok === "editado" && (
           <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
-            Treinamento atualizado.
+            {d.admin.treinos.atualizadoOk}
           </p>
         )}
         <div className="grid gap-3">
@@ -38,12 +40,12 @@ export default async function TreinamentosPage({
                 <h2 className="font-medium">{t.titulo}</h2>
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                   {t.tipo === "video"
-                    ? "Vídeo"
+                    ? d.admin.treinos.tipoVideo
                     : t.tipo === "slides"
-                      ? "Slides"
+                      ? d.admin.treinos.tipoSlides
                       : t.tipo === "arquivo"
-                        ? "Apresentação"
-                        : "Texto"}
+                        ? d.admin.treinos.tipoApresentacao
+                        : d.admin.treinos.tipoTexto}
                 </span>
                 {t.geradoPorIa && (
                   <span className="rounded bg-violet-100 px-2 py-0.5 text-xs text-violet-700">
@@ -52,40 +54,40 @@ export default async function TreinamentosPage({
                 )}
                 {t._count.perguntas > 0 && (
                   <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                    Quiz · {t._count.perguntas}
+                    {d.admin.treinos.quiz(t._count.perguntas)}
                   </span>
                 )}
               </div>
               <p className="mt-0.5 text-sm text-slate-500">{t.descricao}</p>
               <p className="mt-2 text-xs text-slate-400">
-                {t.cliente ? `Cliente: ${t.cliente.nome}` : "Global (todos os clientes)"} ·{" "}
-                {t._count.atribuicoes} atribuição(ões)
+                {t.cliente ? d.admin.treinos.clientePrefixo(t.cliente.nome) : d.admin.treinos.global} ·{" "}
+                {d.admin.treinos.atribuicoes(t._count.atribuicoes)}
               </p>
               <div className="mt-3 flex items-center gap-4 border-t border-slate-100 pt-3">
                 <Link
                   href={`/admin/treinamentos/${t.id}/preview`}
                   className="text-xs font-medium text-slate-700 hover:underline"
                 >
-                  Pré-visualizar
+                  {d.admin.treinos.previsualizar}
                 </Link>
                 <Link
                   href={`/admin/treinamentos/${t.id}/editar`}
                   className="text-xs font-medium text-slate-700 hover:underline"
                 >
-                  Editar
+                  {d.admin.treinos.editar}
                 </Link>
                 <Link
                   href={`/admin/treinamentos/${t.id}/quiz`}
                   className="text-xs font-medium text-slate-700 hover:underline"
                 >
-                  {t._count.perguntas > 0 ? "Editar quiz" : "+ Adicionar quiz"}
+                  {t._count.perguntas > 0 ? d.admin.treinos.editarQuiz : d.admin.treinos.addQuiz}
                 </Link>
                 <BotaoRemover treinamentoId={t.id} titulo={t.titulo} />
               </div>
             </div>
           ))}
           {treinamentos.length === 0 && (
-            <p className="text-sm text-slate-400">Nenhum treinamento ainda.</p>
+            <p className="text-sm text-slate-400">{d.admin.treinos.nenhum}</p>
           )}
         </div>
       </div>
@@ -94,19 +96,17 @@ export default async function TreinamentosPage({
       <div className="space-y-6">
         {erro === "ia" && (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            A geração por IA precisa da chave da Anthropic configurada no projeto. Configure e
-            tente de novo.
+            {d.admin.treinos.erroIa}
           </p>
         )}
         {erro === "ppt" && (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Não consegui ler texto desse arquivo. Envie um <code>.pptx</code> com conteúdo em
-            texto nos slides.
+            {d.admin.treinos.erroPpt}
           </p>
         )}
         {erro === "arquivo" && (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Informe um título e um arquivo <code>.pdf</code> ou <code>.pptx</code>.
+            {d.admin.treinos.erroArquivo}
           </p>
         )}
 
@@ -114,42 +114,41 @@ export default async function TreinamentosPage({
 
         <div>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Novo treinamento (manual)
+          {d.admin.treinos.novoManual}
         </h2>
         <form
           action={criarTreinamento}
           className="space-y-3 rounded-lg border border-slate-200 bg-white p-4"
         >
-          <Campo label="Título">
+          <Campo label={d.admin.treinos.tituloLabel}>
             <input name="titulo" required className={inputCls} placeholder="Ex: Reconhecendo Phishing" />
           </Campo>
-          <Campo label="Descrição">
-            <input name="descricao" required className={inputCls} placeholder="Resumo curto" />
+          <Campo label={d.admin.treinos.descricao}>
+            <input name="descricao" required className={inputCls} />
           </Campo>
-          <Campo label="Tipo">
+          <Campo label={d.admin.treinos.tipo}>
             <select name="tipo" className={inputCls} defaultValue="texto">
-              <option value="texto">Texto</option>
-              <option value="video">Vídeo (embed)</option>
+              <option value="texto">{d.admin.treinos.tipoTextoOpt}</option>
+              <option value="video">{d.admin.treinos.tipoVideoOpt}</option>
             </select>
           </Campo>
-          <Campo label="URL do vídeo (se tipo = vídeo)">
+          <Campo label={d.admin.treinos.urlVideo}>
             <input
               name="conteudoUrl"
               className={inputCls}
               placeholder="https://www.youtube.com/embed/..."
             />
           </Campo>
-          <Campo label="Conteúdo em texto (se tipo = texto)">
+          <Campo label={d.admin.treinos.conteudoTexto}>
             <textarea
               name="corpo"
               rows={4}
               className={inputCls}
-              placeholder="Parágrafos separados por linha em branco."
             />
           </Campo>
-          <Campo label="Cliente">
+          <Campo label={d.admin.gerarIA.cliente}>
             <select name="clienteId" className={inputCls} defaultValue="">
-              <option value="">Global (todos)</option>
+              <option value="">{d.admin.gerarIA.global}</option>
               {clientes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nome}
@@ -158,7 +157,7 @@ export default async function TreinamentosPage({
             </select>
           </Campo>
           <button className="w-full rounded-md bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
-            Criar treinamento
+            {d.admin.treinos.criar}
           </button>
         </form>
         </div>

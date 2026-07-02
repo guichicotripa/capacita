@@ -2,6 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { subirArquivo, gerarTreinamentoIA } from "@/lib/actions";
+import { useDict } from "./I18nProvider";
 
 function Botao({
   rotulo,
@@ -28,15 +29,16 @@ function Botao({
 }
 
 function SelectCliente({ clientes }: { clientes: { id: number; nome: string }[] }) {
+  const d = useDict();
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-slate-600">Cliente</span>
+      <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.cliente}</span>
       <select
         name="clienteId"
         defaultValue=""
         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
       >
-        <option value="">Global (todos)</option>
+        <option value="">{d.admin.gerarIA.global}</option>
         {clientes.map((c) => (
           <option key={c.id} value={c.id}>
             {c.nome}
@@ -51,24 +53,25 @@ const inputCls =
   "w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500";
 
 export function GerarComIA({ clientes }: { clientes: { id: number; nome: string }[] }) {
+  const d = useDict();
   return (
     <div className="space-y-6">
       {/* Subir apresentação como está (PDF ou PPT) */}
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Subir apresentação (PDF ou PPT)
+          {d.admin.gerarIA.subirTitulo}
         </h2>
         <form action={subirArquivo} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Título</span>
+            <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.tituloLabel}</span>
             <input name="titulo" required className={inputCls} placeholder="Ex: Phishing no Teams" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Descrição</span>
-            <input name="descricao" className={inputCls} placeholder="Resumo curto (opcional)" />
+            <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.descricao}</span>
+            <input name="descricao" className={inputCls} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Arquivo (.pdf ou .pptx)</span>
+            <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.arquivoLabel}</span>
             <input
               name="arquivo"
               type="file"
@@ -78,33 +81,27 @@ export function GerarComIA({ clientes }: { clientes: { id: number; nome: string 
             />
           </label>
           <SelectCliente clientes={clientes} />
-          <Botao rotulo="📎 Subir e mostrar como está" pendingRotulo="Subindo…" cor="slate" />
-          <p className="text-xs text-slate-500">
-            Mostra cada página exatamente como no arquivo. <strong>PDF é o recomendado</strong>{" "}
-            (PowerPoint → Salvar como PDF). O <code>.pptx</code> pode não renderizar em alguns
-            arquivos. O quiz você adiciona depois (vira a última página).
-          </p>
+          <Botao rotulo={d.admin.gerarIA.subirBtn} pendingRotulo={d.admin.gerarIA.subindo} cor="slate" />
+          <p className="text-xs text-slate-500">{d.admin.gerarIA.subirAjuda}</p>
         </form>
       </div>
 
       {/* Gerar curso por IA a partir de um tema */}
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Gerar por IA (tema)
+          {d.admin.gerarIA.gerarTemaTitulo}
         </h2>
         <form
           action={gerarTreinamentoIA}
           className="space-y-3 rounded-lg border border-violet-200 bg-violet-50/50 p-4"
         >
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Tema</span>
+            <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.temaLabel}</span>
             <input name="tema" required className={inputCls} placeholder="Ex: Engenharia social no WhatsApp" />
           </label>
           <SelectCliente clientes={clientes} />
-          <Botao rotulo="✨ Gerar curso em slides com IA" pendingRotulo="Gerando com IA… (alguns segundos)" />
-          <p className="text-xs text-slate-500">
-            A IA escreve um curso em slides + quiz de 4 perguntas. Você pode editar depois.
-          </p>
+          <Botao rotulo={d.admin.gerarIA.gerarBtn} pendingRotulo={d.admin.gerarIA.gerando} />
+          <p className="text-xs text-slate-500">{d.admin.gerarIA.gerarAjuda}</p>
         </form>
       </div>
     </div>

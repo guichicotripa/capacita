@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { atribuir } from "@/lib/actions";
 import { formatarData } from "@/lib/status";
 import { SeletorAlunos } from "@/components/SeletorAlunos";
+import { getDict } from "@/lib/i18n-server";
 
 export default async function AtribuirPage({
   searchParams,
@@ -9,6 +10,7 @@ export default async function AtribuirPage({
   searchParams: Promise<{ erro?: string }>;
 }) {
   const { erro } = await searchParams;
+  const d = await getDict();
   const [treinamentos, alunos, clientes, notificacoes] = await Promise.all([
     prisma.treinamento.findMany({ orderBy: { titulo: "asc" } }),
     prisma.usuario.findMany({
@@ -31,7 +33,7 @@ export default async function AtribuirPage({
       alunos: alunos.filter((a) => a.clienteId === c.id).map((a) => ({ id: a.id, nome: a.nome })),
     })),
     {
-      cliente: "Sem cliente",
+      cliente: d.admin.usuarios.semCliente,
       alunos: alunos.filter((a) => !a.clienteId).map((a) => ({ id: a.id, nome: a.nome })),
     },
   ].filter((g) => g.alunos.length > 0);
@@ -44,20 +46,20 @@ export default async function AtribuirPage({
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <div>
-        <h1 className="mb-4 text-xl font-semibold">Atribuir treinamento</h1>
+        <h1 className="mb-4 text-xl font-semibold">{d.admin.atribuir.titulo}</h1>
         {erro === "dados" && (
           <p className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Selecione um treinamento, pelo menos um aluno e um prazo.
+            {d.admin.atribuir.erroDados}
           </p>
         )}
         <form
           action={atribuir}
           className="space-y-3 rounded-lg border border-slate-200 bg-white p-4"
         >
-          <Campo label="Treinamento">
+          <Campo label={d.admin.atribuir.treinamento}>
             <select name="treinamentoId" required className={inputCls} defaultValue="">
               <option value="" disabled>
-                Selecione...
+                {d.admin.atribuir.selecione}
               </option>
               {treinamentos.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -67,7 +69,7 @@ export default async function AtribuirPage({
             </select>
           </Campo>
           <SeletorAlunos grupos={grupos} />
-          <Campo label="Prazo para concluir">
+          <Campo label={d.admin.atribuir.prazoConcluir}>
             <input
               name="prazo"
               type="datetime-local"
@@ -78,13 +80,11 @@ export default async function AtribuirPage({
           </Campo>
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" name="jaConcluido" />
-            Já marcar como concluído (sem o aluno precisar fazer)
+            {d.admin.atribuir.jaConcluido}
           </label>
-          <p className="text-xs text-slate-400">
-            Ao atribuir, uma notificação de liberação é gerada (email simulado no protótipo).
-          </p>
+          <p className="text-xs text-slate-400">{d.admin.atribuir.notaLiberacao}</p>
           <button className="w-full rounded-md bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
-            Atribuir
+            {d.admin.atribuir.atribuir}
           </button>
         </form>
       </div>
@@ -92,7 +92,7 @@ export default async function AtribuirPage({
       {/* Notificações simuladas */}
       <div>
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Notificações enviadas
+          {d.admin.atribuir.notificacoes}
         </h2>
         <div className="space-y-2">
           {notificacoes.map((n) => (
@@ -110,7 +110,7 @@ export default async function AtribuirPage({
             </div>
           ))}
           {notificacoes.length === 0 && (
-            <p className="text-sm text-slate-400">Nenhuma notificação ainda.</p>
+            <p className="text-sm text-slate-400">{d.admin.atribuir.nenhumaNotif}</p>
           )}
         </div>
       </div>

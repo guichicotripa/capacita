@@ -7,7 +7,14 @@ import { useLang } from "./I18nProvider";
 export function SeletorIdioma() {
   const lang = useLang();
   return (
-    <form action={definirIdioma} className="flex items-center overflow-hidden rounded-md border border-slate-300 text-xs">
+    <form
+      action={definirIdioma}
+      title="Idioma / Idioma"
+      className="flex items-center overflow-hidden rounded-md border border-slate-300 text-xs"
+    >
+      <span className="px-1.5 text-slate-400" aria-hidden>
+        🌐
+      </span>
       <button
         name="lang"
         value="pt"

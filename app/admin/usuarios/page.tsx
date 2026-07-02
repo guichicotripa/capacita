@@ -1,17 +1,7 @@
 import { prisma } from "@/lib/db";
 import { FormNovoUsuario } from "@/components/FormNovoUsuario";
 import { UsuarioItem } from "@/components/UsuarioItem";
-
-const MSG_OK: Record<string, string> = {
-  criado: "Usuário criado. Email de acesso enviado (ou simulado, se o email não estiver configurado).",
-  editado: "Usuário atualizado.",
-  senha: "Senha redefinida. Avisamos o usuário por email.",
-};
-const MSG_ERRO: Record<string, string> = {
-  email: "Já existe um usuário com esse email.",
-  dados: "Preencha nome, email e uma senha de ao menos 8 caracteres.",
-  curta: "A senha precisa ter ao menos 8 caracteres.",
-};
+import { getDict } from "@/lib/i18n-server";
 
 export default async function UsuariosPage({
   searchParams,
@@ -19,6 +9,18 @@ export default async function UsuariosPage({
   searchParams: Promise<{ ok?: string; erro?: string }>;
 }) {
   const { ok, erro } = await searchParams;
+  const d = await getDict();
+
+  const MSG_OK: Record<string, string> = {
+    criado: d.admin.usuarios.okCriado,
+    editado: d.admin.usuarios.okEditado,
+    senha: d.admin.usuarios.okSenha,
+  };
+  const MSG_ERRO: Record<string, string> = {
+    email: d.admin.usuarios.erroEmail,
+    dados: d.admin.usuarios.erroDados,
+    curta: d.admin.usuarios.erroCurta,
+  };
 
   const [usuarios, clientes] = await Promise.all([
     prisma.usuario.findMany({
@@ -34,8 +36,8 @@ export default async function UsuariosPage({
     <div>
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Usuários</h1>
-          <p className="text-sm text-slate-500">Crie, edite e redefina o acesso dos usuários.</p>
+          <h1 className="text-xl font-semibold">{d.admin.usuarios.titulo}</h1>
+          <p className="text-sm text-slate-500">{d.admin.usuarios.subtitulo}</p>
         </div>
         <FormNovoUsuario clientes={clientesLite} />
       </div>
@@ -63,7 +65,7 @@ export default async function UsuariosPage({
           />
         ))}
         {usuarios.length === 0 && (
-          <p className="px-4 py-8 text-center text-slate-400">Nenhum usuário.</p>
+          <p className="px-4 py-8 text-center text-slate-400">{d.admin.usuarios.nenhum}</p>
         )}
       </div>
     </div>

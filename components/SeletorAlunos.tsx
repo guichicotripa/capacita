@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useDict } from "./I18nProvider";
 
 type Aluno = { id: number; nome: string };
 type Grupo = { cliente: string; alunos: Aluno[] };
@@ -8,6 +9,7 @@ type Grupo = { cliente: string; alunos: Aluno[] };
 // Seleção múltipla de alunos, agrupada por cliente, com "marcar todos" por grupo.
 // Cada selecionado vira um campo <input name="usuarioIds"> no submit.
 export function SeletorAlunos({ grupos }: { grupos: Grupo[] }) {
+  const d = useDict();
   const [sel, setSel] = useState<Set<number>>(new Set());
 
   const toggle = (id: number) =>
@@ -31,8 +33,8 @@ export function SeletorAlunos({ grupos }: { grupos: Grupo[] }) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-600">Alunos</span>
-        <span className="text-xs text-slate-400">{sel.size} selecionado(s)</span>
+        <span className="text-xs font-medium text-slate-600">{d.admin.atribuir.alunos}</span>
+        <span className="text-xs text-slate-400">{d.admin.atribuir.selecionados(sel.size)}</span>
       </div>
 
       {sel.size === 0 && (
@@ -63,7 +65,7 @@ export function SeletorAlunos({ grupos }: { grupos: Grupo[] }) {
                   </label>
                 ))}
                 {g.alunos.length === 0 && (
-                  <p className="text-xs text-slate-400">Sem alunos.</p>
+                  <p className="text-xs text-slate-400">{d.admin.atribuir.semAlunos}</p>
                 )}
               </div>
             </div>

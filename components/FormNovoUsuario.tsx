@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { criarUsuario } from "@/lib/actions";
+import { useDict } from "./I18nProvider";
 
 type Cliente = { id: number; nome: string };
 
 // Form para o admin cadastrar um novo usuário. Recolhível para não poluir a tela.
 export function FormNovoUsuario({ clientes }: { clientes: Cliente[] }) {
+  const d = useDict();
   const [aberto, setAberto] = useState(false);
 
   if (!aberto) {
@@ -15,7 +17,7 @@ export function FormNovoUsuario({ clientes }: { clientes: Cliente[] }) {
         onClick={() => setAberto(true)}
         className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
       >
-        + Novo usuário
+        {d.admin.usuarios.novoUsuario}
       </button>
     );
   }
@@ -25,19 +27,19 @@ export function FormNovoUsuario({ clientes }: { clientes: Cliente[] }) {
       action={criarUsuario}
       className="space-y-3 rounded-lg border border-slate-200 bg-white p-5"
     >
-      <h2 className="font-medium">Novo usuário</h2>
+      <h2 className="font-medium">{d.admin.usuarios.novoTitulo}</h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Campo nome="nome" rotulo="Nome" />
-        <Campo nome="email" rotulo="Email" tipo="email" />
+        <Campo nome="nome" rotulo={d.admin.usuarios.nome} />
+        <Campo nome="email" rotulo={d.admin.usuarios.email} tipo="email" />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Cliente</label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">{d.admin.usuarios.cliente}</label>
           <select
             name="clienteId"
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           >
-            <option value="">Sem cliente (admin)</option>
+            <option value="">{d.admin.usuarios.semCliente}</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
@@ -46,32 +48,28 @@ export function FormNovoUsuario({ clientes }: { clientes: Cliente[] }) {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Papel</label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">{d.admin.usuarios.papel}</label>
           <select
             name="papel"
             defaultValue="aluno"
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           >
-            <option value="aluno">Aluno</option>
-            <option value="admin">Admin</option>
+            <option value="aluno">{d.admin.usuarios.aluno}</option>
+            <option value="admin">{d.admin.usuarios.admin}</option>
           </select>
         </div>
       </div>
-      <Campo
-        nome="senhaInicial"
-        rotulo="Senha inicial (mín. 8 — o usuário troca no 1º acesso)"
-        tipo="text"
-      />
+      <Campo nome="senhaInicial" rotulo={d.admin.usuarios.senhaInicial} tipo="text" />
       <div className="flex gap-2">
         <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-          Criar e enviar acesso
+          {d.admin.usuarios.criarEnviar}
         </button>
         <button
           type="button"
           onClick={() => setAberto(false)}
           className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
         >
-          Cancelar
+          {d.admin.usuarios.cancelar}
         </button>
       </div>
     </form>

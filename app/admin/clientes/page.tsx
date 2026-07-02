@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/db";
 import { statusDe } from "@/lib/status";
+import { getDict } from "@/lib/i18n-server";
 
 export default async function ClientesPage() {
+  const d = await getDict();
   const clientes = await prisma.cliente.findMany({
     orderBy: { nome: "asc" },
     include: {
@@ -15,7 +17,7 @@ export default async function ClientesPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold">Clientes</h1>
+      <h1 className="mb-4 text-xl font-semibold">{d.admin.clientes.titulo}</h1>
       <div className="grid gap-4">
         {clientes.map((c) => {
           const totalAtrib = c.usuarios.flatMap((u) => u.atribuicoes);
@@ -25,7 +27,7 @@ export default async function ClientesPage() {
               <div className="flex items-center justify-between">
                 <h2 className="font-medium">{c.nome}</h2>
                 <span className="text-sm text-slate-500">
-                  {c.usuarios.length} aluno(s) · {concluidos}/{totalAtrib.length} concluídos
+                  {d.admin.clientes.resumo(c.usuarios.length, concluidos, totalAtrib.length)}
                 </span>
               </div>
               <ul className="mt-3 divide-y divide-slate-100 text-sm">
@@ -36,13 +38,13 @@ export default async function ClientesPage() {
                       <span className="text-slate-700">{u.nome}</span>
                       <span className="text-slate-400">{u.email}</span>
                       <span className="text-slate-500">
-                        {feitos}/{u.atribuicoes.length} treinos
+                        {d.admin.clientes.treinos(feitos, u.atribuicoes.length)}
                       </span>
                     </li>
                   );
                 })}
                 {c.usuarios.length === 0 && (
-                  <li className="py-2 text-slate-400">Nenhum aluno.</li>
+                  <li className="py-2 text-slate-400">{d.admin.clientes.nenhumAluno}</li>
                 )}
               </ul>
             </div>

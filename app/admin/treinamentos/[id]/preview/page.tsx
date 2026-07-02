@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { VisualizadorSlides } from "@/components/VisualizadorSlides";
 import { VisualizadorArquivo } from "@/components/VisualizadorArquivo";
+import { getDict } from "@/lib/i18n-server";
 
 // Pré-visualização do treinamento pelo admin, sem precisar atribuir a um aluno.
 export default async function PreviewPage({
@@ -11,6 +12,7 @@ export default async function PreviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const d = await getDict();
   const t = await prisma.treinamento.findUnique({
     where: { id: Number(id) },
     include: {
@@ -24,12 +26,12 @@ export default async function PreviewPage({
   return (
     <div className="mx-auto max-w-3xl">
       <Link href="/admin/treinamentos" className="text-sm text-slate-500 hover:underline">
-        ← Treinamentos
+        {d.admin.preview.voltar}
       </Link>
       <div className="mt-3 flex items-center gap-2">
         <h1 className="text-xl font-semibold">{t.titulo}</h1>
         <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-          Pré-visualização
+          {d.admin.preview.badge}
         </span>
       </div>
       <p className="mt-1 text-sm text-slate-500">{t.descricao}</p>
@@ -57,11 +59,9 @@ export default async function PreviewPage({
       {t.perguntas.length > 0 && (
         <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
           <h2 className="font-semibold">
-            Avaliação · {t.perguntas.length} perguntas · mínimo {t.notaMinima}%
+            {d.admin.preview.avaliacao(t.perguntas.length, t.notaMinima)}
           </h2>
-          <p className="mb-4 text-xs text-slate-400">
-            A alternativa correta está destacada (visível só aqui na pré-visualização).
-          </p>
+          <p className="mb-4 text-xs text-slate-400">{d.admin.preview.corretaDestacada}</p>
           <ol className="space-y-4">
             {t.perguntas.map((p, i) => (
               <li key={p.id}>

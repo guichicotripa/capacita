@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useDict } from "./I18nProvider";
 
 type Slide = { titulo: string; conteudo: string };
 
 // Editor do deck de slides: adicionar, remover, reordenar e editar cada slide.
 // Serializa tudo num input escondido (slidesJson) que a ação lê no submit.
 export function EditorSlides({ inicial }: { inicial: Slide[] }) {
+  const d = useDict();
   const [slides, setSlides] = useState<Slide[]>(
     inicial.length > 0 ? inicial : [{ titulo: "", conteudo: "" }]
   );
@@ -31,7 +33,7 @@ export function EditorSlides({ inicial }: { inicial: Slide[] }) {
       {slides.map((sl, i) => (
         <div key={i} className="rounded-md border border-slate-200 bg-slate-50 p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Slide {i + 1}</span>
+            <span className="text-xs font-semibold text-slate-500">{d.admin.editorSlides.slide(i + 1)}</span>
             <div className="flex gap-1 text-xs">
               <button
                 type="button"
@@ -54,21 +56,21 @@ export function EditorSlides({ inicial }: { inicial: Slide[] }) {
                 onClick={() => remover(i)}
                 className="rounded px-2 py-1 font-medium text-red-600 hover:bg-red-50"
               >
-                Remover
+                {d.admin.editorSlides.remover}
               </button>
             </div>
           </div>
           <input
             value={sl.titulo}
             onChange={(e) => atualizar(i, "titulo", e.target.value)}
-            placeholder="Título do slide"
+            placeholder={d.admin.editorSlides.tituloSlide}
             className="mb-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           />
           <textarea
             value={sl.conteudo}
             onChange={(e) => atualizar(i, "conteudo", e.target.value)}
             rows={4}
-            placeholder="Tópicos, um por linha."
+            placeholder={d.admin.editorSlides.topicos}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           />
         </div>
@@ -78,7 +80,7 @@ export function EditorSlides({ inicial }: { inicial: Slide[] }) {
         onClick={adicionar}
         className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
       >
-        + Adicionar slide
+        {d.admin.editorSlides.adicionar}
       </button>
     </div>
   );
