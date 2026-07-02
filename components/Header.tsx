@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { logout } from "@/lib/actions";
+import { getDict } from "@/lib/i18n-server";
+import { SeletorIdioma } from "./SeletorIdioma";
 
-export function Header({
+export async function Header({
   nome,
   papel,
   children,
@@ -10,6 +12,7 @@ export function Header({
   papel: string;
   children?: React.ReactNode;
 }) {
+  const d = await getDict();
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
@@ -23,12 +26,13 @@ export function Header({
           <nav className="flex gap-4 text-sm text-slate-600">{children}</nav>
         </div>
         <div className="flex items-center gap-3 text-sm">
+          <SeletorIdioma />
           <Link href="/conta" className="text-slate-500 hover:text-slate-900">
             {nome}
           </Link>
           <form action={logout}>
             <button className="rounded border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50">
-              Sair
+              {d.comum.sair}
             </button>
           </form>
         </div>

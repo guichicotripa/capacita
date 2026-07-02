@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { VisualizadorSlides } from "@/components/VisualizadorSlides";
 import { VisualizadorArquivo } from "@/components/VisualizadorArquivo";
 import { concluir, submeterQuiz } from "@/lib/actions";
+import { getDict } from "@/lib/i18n-server";
 
 export default async function TreinamentoPage({
   params,
@@ -18,6 +19,7 @@ export default async function TreinamentoPage({
   const { id } = await params;
   const { nota, aprovado } = await searchParams;
   const usuario = (await getUsuarioAtual())!;
+  const d = await getDict();
 
   const atrib = await prisma.atribuicao.findUnique({
     where: { id: Number(id) },
@@ -58,7 +60,7 @@ export default async function TreinamentoPage({
   return (
     <div className="mx-auto max-w-3xl">
       <Link href="/aluno" className="text-sm text-slate-500 hover:underline">
-        ← Voltar
+        {d.treino.voltar}
       </Link>
 
       <div className="mt-3 flex items-center gap-2">
@@ -66,7 +68,7 @@ export default async function TreinamentoPage({
         <StatusBadge status={status} />
       </div>
       <p className="mt-1 text-sm text-slate-500">{t.descricao}</p>
-      <p className="mt-1 text-xs text-slate-400">Prazo: {formatarData(atrib.prazo)}</p>
+      <p className="mt-1 text-xs text-slate-400">{d.treino.prazo}: {formatarData(atrib.prazo)}</p>
 
       <div className="mt-6">
         {t.tipo === "arquivo" && t.arquivo ? (
@@ -101,18 +103,16 @@ export default async function TreinamentoPage({
           }`}
         >
           {aprovado === "1"
-            ? `✓ Aprovado com ${nota}%. Treinamento concluído.`
-            : `Você fez ${nota}% (mínimo ${t.notaMinima}%). Revise o conteúdo e tente de novo.`}
+            ? d.treino.aprovadoCom(Number(nota))
+            : d.treino.vocefez(Number(nota), t.notaMinima)}
         </div>
       )}
 
       {/* Revisão da avaliação: mostra o que o aluno marcou, o que errou e a resposta certa. */}
       {temQuiz && atrib.ultimasRespostas && (
         <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="font-semibold">Revisão da avaliação</h2>
-          <p className="mt-0.5 text-xs text-slate-400">
-            Em verde a resposta certa; em vermelho o que você marcou errado.
-          </p>
+          <h2 className="font-semibold">{d.treino.revisao}</h2>
+          <p className="mt-0.5 text-xs text-slate-400">{d.treino.revisaoLegenda}</p>
           {t.perguntas.map((p, i) => {
             const escolhida = (atrib.ultimasRespostas as Record<string, number>)[p.id];
             return (
@@ -134,7 +134,7 @@ export default async function TreinamentoPage({
                         <span className="w-3 shrink-0">{icone}</span>
                         <span>
                           {a.texto}
-                          {marcada && <span className="text-xs text-slate-400"> (sua resposta)</span>}
+                          {marcada && <span className="text-xs text-slate-400"> {d.treino.suaResposta}</span>}
                         </span>
                       </li>
                     );
@@ -149,8 +149,8 @@ export default async function TreinamentoPage({
       {/* Conclusão. Em deck (slides/PDF) o quiz já está na última página. */}
       {status === "concluido" ? (
         <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 text-sm text-green-700">
-          ✓ Concluído em {formatarData(atrib.concluidoEm!)}
-          {atrib.nota !== null && ` · nota ${atrib.nota}%`}
+          {d.treino.concluidoEm(formatarData(atrib.concluidoEm!))}
+          {atrib.nota !== null && d.treino.nota(atrib.nota)}
         </div>
       ) : quizNoDeck ? null : temQuiz ? (
         <form
@@ -158,7 +158,7 @@ export default async function TreinamentoPage({
           className="mt-6 space-y-5 rounded-lg border border-slate-200 bg-white p-6"
         >
           <input type="hidden" name="atribuicaoId" value={atrib.id} />
-          <h2 className="font-semibold">Avaliação (mínimo {t.notaMinima}% para concluir)</h2>
+          <h2 className="font-semibold">{d.treino.avaliacaoMin(t.notaMinima)}</h2>
           {t.perguntas.map((p, i) => (
             <fieldset key={p.id} className="space-y-2">
               <legend className="text-sm font-medium text-slate-800">
@@ -173,18 +173,16 @@ export default async function TreinamentoPage({
             </fieldset>
           ))}
           <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-            Enviar respostas
+            {d.treino.enviarRespostas}
           </button>
         </form>
       ) : (
         <div className="mt-6 flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-sm text-slate-500">
-            Ao terminar o conteúdo, marque como concluído.
-          </p>
+          <p className="text-sm text-slate-500">{d.treino.aoTerminar}</p>
           <form action={concluir}>
             <input type="hidden" name="atribuicaoId" value={atrib.id} />
             <button className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-              Marcar como concluído
+              {d.treino.marcarConcluido}
             </button>
           </form>
         </div>

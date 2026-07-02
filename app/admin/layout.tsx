@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUsuarioAtual } from "@/lib/auth";
+import { getDict } from "@/lib/i18n-server";
 import { Header } from "@/components/Header";
 
 export default async function AdminLayout({
@@ -12,24 +13,25 @@ export default async function AdminLayout({
   if (!usuario) redirect("/login");
   if (usuario.senhaTemporaria) redirect("/trocar-senha");
   if (usuario.papel !== "admin") redirect("/aluno");
+  const d = await getDict();
 
   return (
     <>
       <Header nome={usuario.nome} papel="admin">
         <Link href="/admin" className="hover:text-slate-900">
-          Relatório
+          {d.nav.relatorio}
         </Link>
         <Link href="/admin/atribuir" className="hover:text-slate-900">
-          Atribuir
+          {d.nav.atribuir}
         </Link>
         <Link href="/admin/treinamentos" className="hover:text-slate-900">
-          Treinamentos
+          {d.nav.treinamentos}
         </Link>
         <Link href="/admin/clientes" className="hover:text-slate-900">
-          Clientes
+          {d.nav.clientes}
         </Link>
         <Link href="/admin/usuarios" className="hover:text-slate-900">
-          Usuários
+          {d.nav.usuarios}
         </Link>
       </Header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>

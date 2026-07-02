@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PaginaQuiz } from "./PaginaQuiz";
+import { useDict } from "./I18nProvider";
 
 type Slide = { titulo: string; conteudo: string };
 type Quiz = {
@@ -13,6 +14,7 @@ type Quiz = {
 // Deck navegável: um slide por vez. Se houver quiz, ele é a última página,
 // e só libera depois que o aluno passou por todos os slides.
 export function VisualizadorSlides({ slides, quiz }: { slides: Slide[]; quiz?: Quiz | null }) {
+  const d = useDict();
   const [idx, setIdx] = useState(0);
   const [visitados, setVisitados] = useState<Set<number>>(() => new Set([0]));
 
@@ -66,7 +68,7 @@ export function VisualizadorSlides({ slides, quiz }: { slides: Slide[]; quiz?: Q
       ) : (
         <div className="flex min-h-[280px] flex-col px-8 py-7">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-            Slide {idx + 1} de {total}
+            {d.treino.slideDe(idx + 1, total)}
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-900">{slide!.titulo}</h2>
           <ul className="mt-5 space-y-3">
@@ -78,9 +80,7 @@ export function VisualizadorSlides({ slides, quiz }: { slides: Slide[]; quiz?: Q
             ))}
           </ul>
           {temQuiz && idx === slides.length - 1 && !quizLiberado && (
-            <p className="mt-auto pt-4 text-xs text-amber-600">
-              Veja todos os slides para liberar a avaliação.
-            </p>
+            <p className="mt-auto pt-4 text-xs text-amber-600">{d.treino.vejaTodosSlides}</p>
           )}
         </div>
       )}
@@ -91,7 +91,7 @@ export function VisualizadorSlides({ slides, quiz }: { slides: Slide[]; quiz?: Q
           disabled={primeiro}
           className="rounded-md border border-slate-300 px-4 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
         >
-          ← Anterior
+          {d.treino.anterior}
         </button>
         <div className="flex flex-wrap gap-1.5">
           {Array.from({ length: total }).map((_, i) => {
@@ -121,7 +121,7 @@ export function VisualizadorSlides({ slides, quiz }: { slides: Slide[]; quiz?: Q
           disabled={bloqueadoProximo}
           className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40"
         >
-          {temQuiz && idx === slides.length - 1 ? "Ir para avaliação →" : "Próximo →"}
+          {temQuiz && idx === slides.length - 1 ? d.treino.irAvaliacao : d.treino.proximo}
         </button>
       </div>
     </div>

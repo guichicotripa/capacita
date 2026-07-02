@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PaginaQuiz } from "./PaginaQuiz";
+import { useDict } from "./I18nProvider";
 
 type Quiz = {
   atribuicaoId: number;
@@ -29,6 +30,7 @@ export function VisualizadorArquivo({
 
 // --- PDF: renderiza cada página num canvas com pdf.js ---
 function VisualizadorPdf({ treinamentoId, quiz }: { treinamentoId: number; quiz?: Quiz | null }) {
+  const d = useDict();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfRef = useRef<any>(null);
@@ -110,21 +112,19 @@ function VisualizadorPdf({ treinamentoId, quiz }: { treinamentoId: number; quiz?
       ) : (
         <div className="flex min-h-[280px] flex-col items-center justify-center bg-slate-50 p-3">
           {carregando ? (
-            <p className="text-sm text-slate-400">Carregando…</p>
+            <p className="text-sm text-slate-400">{d.treino.carregando}</p>
           ) : (
             <canvas ref={canvasRef} className="h-auto max-w-full rounded shadow-sm" />
           )}
           {temQuiz && pag === total && !quizLiberado && (
-            <p className="pt-3 text-xs text-amber-600">
-              Veja todas as páginas para liberar a avaliação.
-            </p>
+            <p className="pt-3 text-xs text-amber-600">{d.treino.vejaTodasPaginas}</p>
           )}
         </div>
       )}
       <Navegacao
         pag={pag}
         total={maxNav}
-        rotuloProximo={temQuiz && pag === total && quizLiberado ? "Ir para avaliação →" : "Próximo →"}
+        rotuloProximo={temQuiz && pag === total && quizLiberado ? d.treino.irAvaliacao : d.treino.proximo}
         onAnterior={() => setPag((p) => Math.max(1, p - 1))}
         onProximo={() => setPag((p) => Math.min(maxNav, p + 1))}
       />
@@ -194,7 +194,7 @@ function Navegacao({
   total,
   onAnterior,
   onProximo,
-  rotuloProximo = "Próximo →",
+  rotuloProximo,
 }: {
   pag: number;
   total: number;
@@ -202,6 +202,7 @@ function Navegacao({
   onProximo: () => void;
   rotuloProximo?: string;
 }) {
+  const d = useDict();
   return (
     <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3">
       <button
@@ -209,17 +210,17 @@ function Navegacao({
         disabled={pag <= 1}
         className="rounded-md border border-slate-300 px-4 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
       >
-        ← Anterior
+        {d.treino.anterior}
       </button>
       <span className="text-xs text-slate-500">
-        Página {pag} de {total || "…"}
+        {d.treino.paginaDe(pag, total || "…")}
       </span>
       <button
         onClick={onProximo}
         disabled={pag >= total}
         className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40"
       >
-        {rotuloProximo}
+        {rotuloProximo ?? d.treino.proximo}
       </button>
     </div>
   );

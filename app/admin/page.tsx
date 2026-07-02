@@ -4,6 +4,7 @@ import { statusDe, formatarData } from "@/lib/status";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BotaoDesatribuir } from "@/components/BotaoDesatribuir";
 import { enviarLembretesAction } from "@/lib/actions";
+import { getDict } from "@/lib/i18n-server";
 
 export default async function RelatorioPage({
   searchParams,
@@ -12,6 +13,7 @@ export default async function RelatorioPage({
 }) {
   const { cliente, ok, n, t: totalLembretes, v: vencLembretes, a: aVencLembretes } = await searchParams;
   const clienteId = cliente ? Number(cliente) : null;
+  const d = await getDict();
 
   const clientes = await prisma.cliente.findMany({ orderBy: { nome: "asc" } });
 
@@ -32,55 +34,55 @@ export default async function RelatorioPage({
     <div>
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Relatório de conclusão</h1>
-          <p className="text-sm text-slate-500">Quem fez e quem não fez os treinamentos.</p>
+          <h1 className="text-xl font-semibold">{d.report.titulo}</h1>
+          <p className="text-sm text-slate-500">{d.report.subtitulo}</p>
         </div>
         <div className="flex gap-2">
           <form action={enviarLembretesAction}>
             <button className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-              Enviar lembretes
+              {d.report.enviarLembretes}
             </button>
           </form>
           <a
             href={`/admin/relatorio/export${clienteId ? `?cliente=${clienteId}` : ""}`}
             className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            Exportar CSV
+            {d.report.exportarCsv}
           </a>
           <Link
             href="/admin/atribuir"
             className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
           >
-            + Atribuir treinamento
+            {d.report.atribuirTreino}
           </Link>
         </div>
       </div>
 
       {ok === "atribuido" && (
         <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
-          Treinamento atribuído a {n ?? ""} aluno(s).
+          {d.report.atribuidoA(n ?? "")}
         </p>
       )}
 
       {ok === "lembretes" && (
         <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
           {Number(totalLembretes) > 0
-            ? `${totalLembretes} lembrete(s) enviado(s): ${vencLembretes} vencido(s), ${aVencLembretes} a vencer.`
-            : "Nenhum lembrete a enviar agora (ninguém vencido ou vencendo em breve, ou já avisados hoje)."}
+            ? d.report.lembretesEnviados(totalLembretes ?? "0", vencLembretes ?? "0", aVencLembretes ?? "0")
+            : d.report.nenhumLembrete}
         </p>
       )}
 
       {/* Cards resumo */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card titulo="Taxa de conclusão" valor={`${taxa}%`} />
-        <Card titulo="Concluídos" valor={concluidos} cor="text-green-700" />
-        <Card titulo="Pendentes" valor={pendentes} cor="text-amber-700" />
-        <Card titulo="Vencidos" valor={vencidos} cor="text-red-700" />
+        <Card titulo={d.report.taxa} valor={`${taxa}%`} />
+        <Card titulo={d.report.concluidos} valor={concluidos} cor="text-green-700" />
+        <Card titulo={d.report.pendentes} valor={pendentes} cor="text-amber-700" />
+        <Card titulo={d.report.vencidos} valor={vencidos} cor="text-red-700" />
       </div>
 
       {/* Filtro por cliente */}
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <FiltroLink ativo={!clienteId} href="/admin" rotulo="Todos os clientes" />
+        <FiltroLink ativo={!clienteId} href="/admin" rotulo={d.report.todosClientes} />
         {clientes.map((c) => (
           <FiltroLink
             key={c.id}
@@ -96,11 +98,11 @@ export default async function RelatorioPage({
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="px-4 py-3 font-medium">Aluno</th>
-              <th className="px-4 py-3 font-medium">Cliente</th>
-              <th className="px-4 py-3 font-medium">Treinamento</th>
-              <th className="px-4 py-3 font-medium">Prazo</th>
-              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">{d.report.thAluno}</th>
+              <th className="px-4 py-3 font-medium">{d.report.thCliente}</th>
+              <th className="px-4 py-3 font-medium">{d.report.thTreino}</th>
+              <th className="px-4 py-3 font-medium">{d.report.thPrazo}</th>
+              <th className="px-4 py-3 font-medium">{d.report.thStatus}</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
@@ -126,7 +128,7 @@ export default async function RelatorioPage({
             {comStatus.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
-                  Nenhuma atribuição.
+                  {d.report.nenhumaAtrib}
                 </td>
               </tr>
             )}

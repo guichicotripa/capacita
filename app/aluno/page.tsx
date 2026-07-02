@@ -3,9 +3,11 @@ import { getUsuarioAtual } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { statusDe, formatarData } from "@/lib/status";
 import { StatusBadge } from "@/components/StatusBadge";
+import { getDict } from "@/lib/i18n-server";
 
 export default async function AlunoHome() {
   const usuario = (await getUsuarioAtual())!;
+  const d = await getDict();
 
   const atribuicoes = await prisma.atribuicao.findMany({
     where: { usuarioId: usuario.id },
@@ -15,14 +17,14 @@ export default async function AlunoHome() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold">Meus treinamentos</h1>
+      <h1 className="text-xl font-semibold">{d.aluno.meus}</h1>
       <p className="mb-6 text-sm text-slate-500">
         {usuario.cliente ? `${usuario.cliente.nome} · ` : ""}
         {usuario.nome}
       </p>
 
       {atribuicoes.length === 0 && (
-        <p className="text-sm text-slate-500">Nenhum treinamento atribuído a você.</p>
+        <p className="text-sm text-slate-500">{d.aluno.nenhum}</p>
       )}
 
       <div className="grid gap-3">
@@ -41,20 +43,20 @@ export default async function AlunoHome() {
                 </div>
                 <p className="mt-0.5 text-sm text-slate-500">{a.treinamento.descricao}</p>
                 <p className="mt-1 text-xs text-slate-400">
-                  Prazo: {formatarData(a.prazo)}
-                  {a.concluidoEm && ` · Concluído em ${formatarData(a.concluidoEm)}`}
+                  {d.aluno.prazo}: {formatarData(a.prazo)}
+                  {a.concluidoEm && ` · ${d.aluno.concluidoEm(formatarData(a.concluidoEm))}`}
                 </p>
               </div>
               {bloqueado ? (
                 <span className="rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-400">
-                  Acesso encerrado
+                  {d.aluno.acessoEncerrado}
                 </span>
               ) : (
                 <Link
                   href={`/aluno/${a.id}`}
                   className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                 >
-                  {status === "concluido" ? "Revisar" : "Abrir"}
+                  {status === "concluido" ? d.aluno.revisar : d.aluno.abrir}
                 </Link>
               )}
             </div>

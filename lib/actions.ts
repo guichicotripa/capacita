@@ -14,6 +14,8 @@ import {
 import { statusDe } from "./status";
 import { notificar, enviarEmail } from "./email";
 import { enviarLembretes } from "./lembretes";
+import { cookies } from "next/headers";
+import { LANG_COOKIE } from "./i18n-server";
 import { iaDisponivel, gerarCursoIA, type CursoGerado } from "./ai";
 import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 import { extrairTextoPptx } from "./pptx";
@@ -508,6 +510,14 @@ export async function atribuir(formData: FormData) {
 
   revalidatePath("/admin");
   redirect(`/admin?ok=atribuido&n=${usuarioIds.length}`);
+}
+
+// Troca o idioma da interface (guardado em cookie). Vale para toda a plataforma.
+export async function definirIdioma(formData: FormData) {
+  const lang = formData.get("lang") === "es" ? "es" : "pt";
+  const store = await cookies();
+  store.set(LANG_COOKIE, lang, { path: "/", maxAge: 60 * 60 * 24 * 365 });
+  revalidatePath("/", "layout");
 }
 
 // Admin dispara os lembretes de prazo manualmente (o mesmo que o cron faz).
