@@ -82,6 +82,14 @@ export default async function TreinamentosPage({
                 >
                   {t._count.perguntas > 0 ? d.admin.treinos.editarQuiz : d.admin.treinos.addQuiz}
                 </Link>
+                {t._count.perguntas > 0 && (
+                  <Link
+                    href={`/admin/treinamentos/${t.id}/resultados`}
+                    className="text-xs font-medium text-slate-700 hover:underline"
+                  >
+                    {d.admin.treinos.resultados}
+                  </Link>
+                )}
                 <BotaoRemover treinamentoId={t.id} titulo={t.titulo} />
               </div>
             </div>
