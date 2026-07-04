@@ -223,19 +223,19 @@ export async function gerarTreinamentoIA(formData: FormData) {
   if (!usuario || usuario.papel !== "admin") redirect("/login");
 
   if (!iaDisponivel()) {
-    redirect("/admin/treinamentos?erro=ia");
+    redirect("/admin/treinamentos/novo?erro=ia");
   }
 
   const tema = String(formData.get("tema") || "").trim();
   const clienteIdRaw = String(formData.get("clienteId") || "");
-  if (!tema) redirect("/admin/treinamentos");
+  if (!tema) redirect("/admin/treinamentos/novo");
 
   let curso;
   try {
     curso = await gerarCursoIA(tema);
   } catch (e) {
     console.error("Falha na geração por IA:", e);
-    redirect("/admin/treinamentos?erro=ia");
+    redirect("/admin/treinamentos/novo?erro=ia");
   }
 
   await persistirCurso(curso!, clienteIdRaw);
@@ -339,13 +339,13 @@ export async function subirArquivo(formData: FormData) {
   const descricao = String(formData.get("descricao") || "").trim();
   const clienteIdRaw = String(formData.get("clienteId") || "");
   if (!arquivo || arquivo.size === 0 || !titulo) {
-    redirect("/admin/treinamentos?erro=arquivo");
+    redirect("/admin/treinamentos/novo?erro=arquivo");
   }
 
   const nome = arquivo!.name.toLowerCase();
   const ehPdf = nome.endsWith(".pdf");
   const ehPptx = nome.endsWith(".pptx");
-  if (!ehPdf && !ehPptx) redirect("/admin/treinamentos?erro=arquivo");
+  if (!ehPdf && !ehPptx) redirect("/admin/treinamentos/novo?erro=arquivo");
   const mime = ehPdf
     ? "application/pdf"
     : "application/vnd.openxmlformats-officedocument.presentationml.presentation";

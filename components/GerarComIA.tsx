@@ -52,58 +52,46 @@ function SelectCliente({ clientes }: { clientes: { id: number; nome: string }[] 
 const inputCls =
   "w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500";
 
-export function GerarComIA({ clientes }: { clientes: { id: number; nome: string }[] }) {
+export function SubirApresentacao({ clientes }: { clientes: { id: number; nome: string }[] }) {
   const d = useDict();
   return (
-    <div className="space-y-6">
-      {/* Subir apresentação como está (PDF ou PPT) */}
-      <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-          {d.admin.gerarIA.subirTitulo}
-        </h2>
-        <form action={subirArquivo} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.tituloLabel}</span>
-            <input name="titulo" required className={inputCls} placeholder="Ex: Phishing no Teams" />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.descricao}</span>
-            <input name="descricao" className={inputCls} />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.arquivoLabel}</span>
-            <input
-              name="arquivo"
-              type="file"
-              accept=".pdf,.pptx"
-              required
-              className="w-full text-xs file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-white"
-            />
-          </label>
-          <SelectCliente clientes={clientes} />
-          <Botao rotulo={d.admin.gerarIA.subirBtn} pendingRotulo={d.admin.gerarIA.subindo} cor="slate" />
-          <p className="text-xs text-slate-500">{d.admin.gerarIA.subirAjuda}</p>
-        </form>
-      </div>
+    <form action={subirArquivo} className="space-y-3">
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.tituloLabel}</span>
+        <input name="titulo" required className={inputCls} placeholder="Ex: Phishing no Teams" />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.descricao}</span>
+        <input name="descricao" className={inputCls} />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.arquivoLabel}</span>
+        <input
+          name="arquivo"
+          type="file"
+          accept=".pdf,.pptx"
+          required
+          className="w-full text-xs file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-white"
+        />
+      </label>
+      <SelectCliente clientes={clientes} />
+      <Botao rotulo={d.admin.gerarIA.subirBtn} pendingRotulo={d.admin.gerarIA.subindo} cor="slate" />
+      <p className="text-xs text-slate-500">{d.admin.gerarIA.subirAjuda}</p>
+    </form>
+  );
+}
 
-      {/* Gerar curso por IA a partir de um tema */}
-      <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-          {d.admin.gerarIA.gerarTemaTitulo}
-        </h2>
-        <form
-          action={gerarTreinamentoIA}
-          className="space-y-3 rounded-lg border border-violet-200 bg-violet-50/50 p-4"
-        >
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.temaLabel}</span>
-            <input name="tema" required className={inputCls} placeholder="Ex: Engenharia social no WhatsApp" />
-          </label>
-          <SelectCliente clientes={clientes} />
-          <Botao rotulo={d.admin.gerarIA.gerarBtn} pendingRotulo={d.admin.gerarIA.gerando} />
-          <p className="text-xs text-slate-500">{d.admin.gerarIA.gerarAjuda}</p>
-        </form>
-      </div>
-    </div>
+export function GerarPorTema({ clientes }: { clientes: { id: number; nome: string }[] }) {
+  const d = useDict();
+  return (
+    <form action={gerarTreinamentoIA} className="space-y-3">
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.temaLabel}</span>
+        <input name="tema" required className={inputCls} placeholder="Ex: Engenharia social no WhatsApp" />
+      </label>
+      <SelectCliente clientes={clientes} />
+      <Botao rotulo={d.admin.gerarIA.gerarBtn} pendingRotulo={d.admin.gerarIA.gerando} />
+      <p className="text-xs text-slate-500">{d.admin.gerarIA.gerarAjuda}</p>
+    </form>
   );
 }

@@ -2,6 +2,7 @@
 
 import { removerTreinamento } from "@/lib/actions";
 import { useDict } from "./I18nProvider";
+import { IconTrash } from "./Icones";
 
 // Botao de remover treinamento com confirmacao. Client component so para o confirm().
 export function BotaoRemover({ treinamentoId, titulo }: { treinamentoId: number; titulo: string }) {
@@ -14,10 +15,15 @@ export function BotaoRemover({ treinamentoId, titulo }: { treinamentoId: number;
           e.preventDefault();
         }
       }}
+      className="inline"
     >
       <input type="hidden" name="treinamentoId" value={treinamentoId} />
-      <button className="text-xs font-medium text-red-600 hover:text-red-700 hover:underline">
-        {d.admin.treinos.remover}
+      <button
+        title={d.admin.treinos.remover}
+        aria-label={d.admin.treinos.remover}
+        className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+      >
+        <IconTrash />
       </button>
     </form>
   );
