@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { atualizarUsuario, redefinirSenha } from "@/lib/actions";
 import { useDict } from "./I18nProvider";
+import { SenhaGerada } from "./SenhaGerada";
 
 type Cliente = { id: number; nome: string };
 type Usuario = {
@@ -104,15 +105,9 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
       )}
 
       {resetando && (
-        <form action={redefinirSenha} className="mt-3 flex flex-wrap items-center gap-2">
+        <form action={redefinirSenha} className="mt-3 space-y-2">
           <input type="hidden" name="id" value={usuario.id} />
-          <input
-            name="novaSenha"
-            type="text"
-            required
-            placeholder={d.admin.usuarios.novaSenhaPh}
-            className="grow rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-          />
+          <SenhaGerada name="novaSenha" />
           <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
             {d.admin.usuarios.redefinirAvisar}
           </button>

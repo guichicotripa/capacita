@@ -637,7 +637,8 @@ export async function criarUsuario(formData: FormData) {
   const senhaInicial = String(formData.get("senhaInicial") || "");
   const clienteIdRaw = String(formData.get("clienteId") || "");
 
-  if (!nome || !email || senhaInicial.length < 8) {
+  // A senha vem gerada pelo cliente; validamos a política no servidor por segurança.
+  if (!nome || !email || validarPolitica(senhaInicial)) {
     redirect("/admin/usuarios?erro=dados");
   }
   const existe = await prisma.usuario.findUnique({ where: { email } });
@@ -698,7 +699,7 @@ export async function redefinirSenha(formData: FormData) {
 
   const id = Number(formData.get("id"));
   const novaSenha = String(formData.get("novaSenha") || "");
-  if (novaSenha.length < 8) redirect("/admin/usuarios?erro=curta");
+  if (validarPolitica(novaSenha)) redirect("/admin/usuarios?erro=curta");
 
   const alvo = await prisma.usuario.update({
     where: { id },
