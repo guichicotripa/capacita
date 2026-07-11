@@ -1,8 +1,14 @@
 import { prisma } from "@/lib/db";
 import { statusDe } from "@/lib/status";
 import { getDict } from "@/lib/i18n-server";
+import { FormNovoCliente } from "@/components/FormNovoCliente";
 
-export default async function ClientesPage() {
+export default async function ClientesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ erro?: string; ok?: string }>;
+}) {
+  const { erro, ok } = await searchParams;
   const d = await getDict();
   const clientes = await prisma.cliente.findMany({
     orderBy: { nome: "asc" },
@@ -17,7 +23,25 @@ export default async function ClientesPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold">{d.admin.clientes.titulo}</h1>
+      <h1 className="mb-3 text-xl font-semibold">{d.admin.clientes.titulo}</h1>
+      <div className="mb-4">
+        <FormNovoCliente />
+      </div>
+      {ok === "criado" && (
+        <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          {d.admin.clientes.criadoOk}
+        </p>
+      )}
+      {erro === "nome" && (
+        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {d.admin.clientes.erroNome}
+        </p>
+      )}
+      {erro === "existe" && (
+        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {d.admin.clientes.erroExiste}
+        </p>
+      )}
       <div className="grid gap-4">
         {clientes.map((c) => {
           const totalAtrib = c.usuarios.flatMap((u) => u.atribuicoes);

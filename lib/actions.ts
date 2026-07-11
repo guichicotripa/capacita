@@ -625,6 +625,22 @@ export async function trocarSenha(formData: FormData) {
   redirect("/conta?ok=senha");
 }
 
+// Admin cria um novo cliente (empresa). Onboarding de nova conta.
+export async function criarCliente(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const nome = String(formData.get("nome") || "").trim();
+  if (!nome) redirect("/admin/clientes?erro=nome");
+
+  const existe = await prisma.cliente.findFirst({ where: { nome } });
+  if (existe) redirect("/admin/clientes?erro=existe");
+
+  await prisma.cliente.create({ data: { nome } });
+  revalidatePath("/admin/clientes");
+  redirect("/admin/clientes?ok=criado");
+}
+
 // Admin cria um usuário com senha inicial (que ele troca no 1º acesso) e
 // dispara o email de boas-vindas com o link de acesso.
 export async function criarUsuario(formData: FormData) {
