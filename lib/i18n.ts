@@ -17,6 +17,16 @@ const pt = {
     senha: "Senha",
     entrar: "Entrar",
     erro: "Email ou senha inválidos.",
+    bloqueado: "Muitas tentativas. Tente de novo em alguns minutos.",
+  },
+  politicaSenha: {
+    curta: "A senha precisa ter ao menos 14 caracteres.",
+    semMinuscula: "A senha precisa ter ao menos uma letra minúscula.",
+    semMaiuscula: "A senha precisa ter ao menos uma letra maiúscula.",
+    semDigito: "A senha precisa ter ao menos um número.",
+    semEspecial: "A senha precisa ter ao menos um caractere especial.",
+    reutilizada: "Você não pode reutilizar uma das suas últimas senhas.",
+    requisitos: "Mín. 14 caracteres, com maiúscula, minúscula, número e caractere especial.",
   },
   nav: {
     relatorio: "Relatório",
@@ -323,6 +333,16 @@ const es: Dict = {
     senha: "Contraseña",
     entrar: "Entrar",
     erro: "Correo o contraseña inválidos.",
+    bloqueado: "Demasiados intentos. Vuelve a intentarlo en unos minutos.",
+  },
+  politicaSenha: {
+    curta: "La contraseña debe tener al menos 14 caracteres.",
+    semMinuscula: "La contraseña debe tener al menos una letra minúscula.",
+    semMaiuscula: "La contraseña debe tener al menos una letra mayúscula.",
+    semDigito: "La contraseña debe tener al menos un número.",
+    semEspecial: "La contraseña debe tener al menos un carácter especial.",
+    reutilizada: "No puedes reutilizar una de tus últimas contraseñas.",
+    requisitos: "Mín. 14 caracteres, con mayúscula, minúscula, número y carácter especial.",
   },
   nav: {
     relatorio: "Informe",

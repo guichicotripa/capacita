@@ -28,7 +28,7 @@ export default async function LoginPage({
 
         {erro && (
           <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-            {d.login.erro}
+            {erro === "bloqueado" ? d.login.bloqueado : d.login.erro}
           </p>
         )}
 

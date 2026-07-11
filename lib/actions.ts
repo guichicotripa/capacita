@@ -49,13 +49,47 @@ async function persistirCurso(curso: CursoGerado, clienteIdRaw: string) {
   });
 }
 
+// Bloqueio de força-bruta por conta: após MAX_FALHAS tentativas erradas
+// seguidas, a conta fica bloqueada por LOCK_MIN minutos. Tradeoff conhecido:
+// um atacante pode travar a conta de um usuário real (DoS leve); por isso o
+// bloqueio é curto e some sozinho. Proteção por conta, não por IP.
+const MAX_FALHAS = 5;
+const LOCK_MIN = 15;
+
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const senha = String(formData.get("senha") || "");
 
   const usuario = await prisma.usuario.findUnique({ where: { email } });
+
+  // Conta bloqueada por tentativas recentes?
+  if (usuario?.bloqueadoAte && usuario.bloqueadoAte > new Date()) {
+    redirect("/login?erro=bloqueado");
+  }
+
   if (!usuario || !verificarSenha(senha, usuario.senhaHash)) {
+    // Só conseguimos contabilizar quando a conta existe.
+    if (usuario) {
+      const falhas = usuario.falhasLogin + 1;
+      const bloqueou = falhas >= MAX_FALHAS;
+      await prisma.usuario.update({
+        where: { id: usuario.id },
+        data: {
+          falhasLogin: bloqueou ? 0 : falhas,
+          bloqueadoAte: bloqueou ? new Date(Date.now() + LOCK_MIN * 60 * 1000) : usuario.bloqueadoAte,
+        },
+      });
+      if (bloqueou) redirect("/login?erro=bloqueado");
+    }
     redirect("/login?erro=1");
+  }
+
+  // Sucesso: zera o contador de falhas e qualquer bloqueio.
+  if (usuario!.falhasLogin !== 0 || usuario!.bloqueadoAte) {
+    await prisma.usuario.update({
+      where: { id: usuario!.id },
+      data: { falhasLogin: 0, bloqueadoAte: null },
+    });
   }
 
   // Se o usuário tem 2FA ativo, exige o código antes de abrir a sessão.
