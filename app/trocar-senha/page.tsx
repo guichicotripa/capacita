@@ -18,8 +18,13 @@ export default async function TrocarSenhaPage({
 
   const mensagemErro: Record<string, string> = {
     atual: d.conta.erroAtual,
-    curta: d.conta.erroCurta,
     confirma: d.conta.erroConfirma,
+    curta: d.politicaSenha.curta,
+    semMinuscula: d.politicaSenha.semMinuscula,
+    semMaiuscula: d.politicaSenha.semMaiuscula,
+    semDigito: d.politicaSenha.semDigito,
+    semEspecial: d.politicaSenha.semEspecial,
+    reutilizada: d.politicaSenha.reutilizada,
   };
 
   return (
@@ -36,7 +41,7 @@ export default async function TrocarSenhaPage({
 
         <form action={trocarSenha} className="mt-5 space-y-4">
           <Campo nome="senhaAtual" rotulo={d.trocarSenha.senhaAtual} />
-          <Campo nome="novaSenha" rotulo={d.trocarSenha.novaSenha} />
+          <Campo nome="novaSenha" rotulo={d.trocarSenha.novaSenha} dica={d.politicaSenha.requisitos} />
           <Campo nome="confirmar" rotulo={d.trocarSenha.confirmar} />
           <button className="w-full rounded-md bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
             {d.trocarSenha.salvarEntrar}
@@ -47,7 +52,7 @@ export default async function TrocarSenhaPage({
   );
 }
 
-function Campo({ nome, rotulo }: { nome: string; rotulo: string }) {
+function Campo({ nome, rotulo, dica }: { nome: string; rotulo: string; dica?: string }) {
   return (
     <div>
       <label className="mb-1 block text-sm font-medium text-slate-700">{rotulo}</label>
@@ -58,6 +63,7 @@ function Campo({ nome, rotulo }: { nome: string; rotulo: string }) {
         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
         placeholder="••••••••"
       />
+      {dica && <p className="mt-1 text-xs text-slate-400">{dica}</p>}
     </div>
   );
 }

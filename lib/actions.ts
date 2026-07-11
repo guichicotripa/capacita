@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./db";
 import { verificarSenha, hashSenha } from "./password";
+import { validarPolitica, gerarSenhaForte } from "./password-policy";
 import {
   criarSessao,
   encerrarSessao,
@@ -577,13 +578,44 @@ export async function trocarSenha(formData: FormData) {
   const destino = usuario!.senhaTemporaria ? "/trocar-senha" : "/conta";
 
   if (!verificarSenha(atual, usuario!.senhaHash)) redirect(`${destino}?erro=atual`);
-  if (nova.length < 8) redirect(`${destino}?erro=curta`);
+  const violacao = validarPolitica(nova);
+  if (violacao) redirect(`${destino}?erro=${violacao}`);
   if (nova !== confirmar) redirect(`${destino}?erro=confirma`);
 
-  await prisma.usuario.update({
-    where: { id: usuario!.id },
-    data: { senhaHash: hashSenha(nova), senhaTemporaria: false },
+  // Bloqueia reutilização: senha atual + últimas 6 do histórico.
+  const historico = await prisma.senhaHistorico.findMany({
+    where: { usuarioId: usuario!.id },
+    orderBy: { criadoEm: "desc" },
+    take: 6,
   });
+  const anteriores = [usuario!.senhaHash, ...historico.map((h) => h.senhaHash)];
+  if (anteriores.some((h) => verificarSenha(nova, h))) {
+    redirect(`${destino}?erro=reutilizada`);
+  }
+
+  await prisma.$transaction([
+    // Guarda a senha que está saindo no histórico.
+    prisma.senhaHistorico.create({
+      data: { usuarioId: usuario!.id, senhaHash: usuario!.senhaHash },
+    }),
+    prisma.usuario.update({
+      where: { id: usuario!.id },
+      data: { senhaHash: hashSenha(nova), senhaTemporaria: false },
+    }),
+  ]);
+
+  // Mantém só as 6 últimas entradas do histórico.
+  const antigas = await prisma.senhaHistorico.findMany({
+    where: { usuarioId: usuario!.id },
+    orderBy: { criadoEm: "desc" },
+    skip: 6,
+    select: { id: true },
+  });
+  if (antigas.length > 0) {
+    await prisma.senhaHistorico.deleteMany({
+      where: { id: { in: antigas.map((a) => a.id) } },
+    });
+  }
 
   if (usuario!.senhaTemporaria) {
     // Acabou de trocar a senha temporária: manda pra home dele.

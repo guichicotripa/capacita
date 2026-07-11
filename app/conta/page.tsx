@@ -96,13 +96,18 @@ export default async function ContaPage({
           )}
           {erro && erro !== "1" && (
             <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-              {erro === "atual"
-                ? d.conta.erroAtual
-                : erro === "curta"
-                  ? d.conta.erroCurta
-                  : erro === "confirma"
-                    ? d.conta.erroConfirma
-                    : d.conta.erroGenerico}
+              {(
+                {
+                  atual: d.conta.erroAtual,
+                  confirma: d.conta.erroConfirma,
+                  curta: d.politicaSenha.curta,
+                  semMinuscula: d.politicaSenha.semMinuscula,
+                  semMaiuscula: d.politicaSenha.semMaiuscula,
+                  semDigito: d.politicaSenha.semDigito,
+                  semEspecial: d.politicaSenha.semEspecial,
+                  reutilizada: d.politicaSenha.reutilizada,
+                } as Record<string, string>
+              )[erro] ?? d.conta.erroGenerico}
             </p>
           )}
           <form action={trocarSenha} className="mt-4 space-y-3">
@@ -120,6 +125,7 @@ export default async function ContaPage({
               placeholder={d.conta.novaSenha}
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
             />
+            <p className="text-xs text-slate-400">{d.politicaSenha.requisitos}</p>
             <input
               name="confirmar"
               type="password"
