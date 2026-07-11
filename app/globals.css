@@ -9,3 +9,17 @@ body {
   background: #f8fafc; /* slate-50 */
   color: #0f172a; /* slate-900 */
 }
+
+/* Impressão do certificado: esconde o cabeçalho e controles, só a folha aparece. */
+@media print {
+  header,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .certificado {
+    border-color: #0f172a !important;
+  }
+}
