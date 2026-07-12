@@ -16,7 +16,16 @@ type Usuario = {
 };
 
 // Linha de usuário com edição inline (infos) e redefinição de senha.
-export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes: Cliente[] }) {
+// full = admin geral (edita cliente e papel); admin de cliente edita só nome/email/senha.
+export function UsuarioItem({
+  usuario,
+  clientes,
+  full = true,
+}: {
+  usuario: Usuario;
+  clientes: Cliente[];
+  full?: boolean;
+}) {
   const d = useDict();
   const [editando, setEditando] = useState(false);
   const [resetando, setResetando] = useState(false);
@@ -76,26 +85,31 @@ export function UsuarioItem({ usuario, clientes }: { usuario: Usuario; clientes:
             placeholder={d.admin.usuarios.email}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           />
-          <select
-            name="clienteId"
-            defaultValue={usuario.clienteId ?? ""}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-          >
-            <option value="">{d.admin.usuarios.semCliente}</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </select>
-          <select
-            name="papel"
-            defaultValue={usuario.papel}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-          >
-            <option value="aluno">{d.admin.usuarios.aluno}</option>
-            <option value="admin">{d.admin.usuarios.admin}</option>
-          </select>
+          {/* Cliente e papel só editáveis pelo admin geral. */}
+          {full && (
+            <>
+              <select
+                name="clienteId"
+                defaultValue={usuario.clienteId ?? ""}
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+              >
+                <option value="">{d.admin.usuarios.semCliente}</option>
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="papel"
+                defaultValue={usuario.papel}
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+              >
+                <option value="aluno">{d.admin.usuarios.aluno}</option>
+                <option value="admin">{d.admin.usuarios.admin}</option>
+              </select>
+            </>
+          )}
           <div className="sm:col-span-2">
             <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
               {d.admin.usuarios.salvar}

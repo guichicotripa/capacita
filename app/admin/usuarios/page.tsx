@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { FormNovoUsuario } from "@/components/FormNovoUsuario";
 import { UsuarioItem } from "@/components/UsuarioItem";
+import { getUsuarioAtual } from "@/lib/auth";
+import { ehFullAdmin, escopoCliente } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
 export default async function UsuariosPage({
@@ -9,6 +11,9 @@ export default async function UsuariosPage({
   searchParams: Promise<{ ok?: string; erro?: string }>;
 }) {
   const { ok, erro } = await searchParams;
+  const usuario = (await getUsuarioAtual())!;
+  const escopo = escopoCliente(usuario);
+  const full = ehFullAdmin(usuario);
   const d = await getDict();
 
   const MSG_OK: Record<string, string> = {
@@ -24,10 +29,13 @@ export default async function UsuariosPage({
 
   const [usuarios, clientes] = await Promise.all([
     prisma.usuario.findMany({
+      // Admin de cliente só vê usuários do próprio cliente.
+      where: escopo === null ? {} : { clienteId: escopo },
       include: { cliente: true },
       orderBy: [{ papel: "asc" }, { nome: "asc" }],
     }),
-    prisma.cliente.findMany({ orderBy: { nome: "asc" } }),
+    // Só o full admin escolhe cliente ao criar/editar usuário.
+    full ? prisma.cliente.findMany({ orderBy: { nome: "asc" } }) : Promise.resolve([]),
   ]);
 
   const clientesLite = clientes.map((c) => ({ id: c.id, nome: c.nome }));
@@ -39,7 +47,7 @@ export default async function UsuariosPage({
           <h1 className="text-xl font-semibold">{d.admin.usuarios.titulo}</h1>
           <p className="text-sm text-slate-500">{d.admin.usuarios.subtitulo}</p>
         </div>
-        <FormNovoUsuario clientes={clientesLite} />
+        <FormNovoUsuario clientes={clientesLite} full={full} />
       </div>
 
       {ok && MSG_OK[ok] && (
@@ -62,6 +70,7 @@ export default async function UsuariosPage({
               clienteNome: u.cliente?.nome ?? null,
             }}
             clientes={clientesLite}
+            full={full}
           />
         ))}
         {usuarios.length === 0 && (

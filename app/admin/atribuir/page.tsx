@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { atribuir } from "@/lib/actions";
 import { formatarData } from "@/lib/status";
 import { SeletorAlunos } from "@/components/SeletorAlunos";
+import { getUsuarioAtual } from "@/lib/auth";
+import { escopoCliente } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
 export default async function AtribuirPage({
@@ -10,16 +12,26 @@ export default async function AtribuirPage({
   searchParams: Promise<{ erro?: string }>;
 }) {
   const { erro } = await searchParams;
+  const usuario = (await getUsuarioAtual())!;
+  const escopo = escopoCliente(usuario);
   const d = await getDict();
   const [treinamentos, alunos, clientes, notificacoes] = await Promise.all([
-    prisma.treinamento.findMany({ orderBy: { titulo: "asc" } }),
+    prisma.treinamento.findMany({
+      // Admin de cliente atribui só os próprios treinos + os globais.
+      where: escopo === null ? {} : { OR: [{ clienteId: escopo }, { clienteId: null }] },
+      orderBy: { titulo: "asc" },
+    }),
     prisma.usuario.findMany({
-      where: { papel: "aluno" },
+      where: escopo === null ? { papel: "aluno" } : { papel: "aluno", clienteId: escopo },
       include: { cliente: true },
       orderBy: { nome: "asc" },
     }),
-    prisma.cliente.findMany({ orderBy: { nome: "asc" } }),
+    escopo === null
+      ? prisma.cliente.findMany({ orderBy: { nome: "asc" } })
+      : prisma.cliente.findMany({ where: { id: escopo }, orderBy: { nome: "asc" } }),
     prisma.notificacao.findMany({
+      // Notificações também limitadas ao cliente do admin.
+      where: escopo === null ? {} : { atribuicao: { usuario: { clienteId: escopo } } },
       orderBy: { enviadoEm: "desc" },
       take: 8,
       include: { atribuicao: { include: { usuario: true } } },

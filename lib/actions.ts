@@ -5,7 +5,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "./db";
 import { verificarSenha, hashSenha } from "./password";
 import { validarPolitica } from "./password-policy";
-import { ehFullAdmin, escopoCliente, podeEditarTreino, clienteParaCriacao } from "./escopo";
+import {
+  ehFullAdmin,
+  escopoCliente,
+  podeEditarTreino,
+  podeVerTreino,
+  clienteParaCriacao,
+} from "./escopo";
 import {
   criarSessao,
   encerrarSessao,
@@ -530,10 +536,15 @@ export async function atribuir(formData: FormData) {
   }
 
   const treinamento = await prisma.treinamento.findUnique({ where: { id: treinamentoId } });
+  // Admin de cliente só atribui treino que enxerga (próprio + global).
+  if (!treinamento || !podeVerTreino(treinamento, usuario)) redirect("/admin/atribuir?erro=dados");
+  const escopo = escopoCliente(usuario);
 
   for (const usuarioId of usuarioIds) {
     const alvo = await prisma.usuario.findUnique({ where: { id: usuarioId } });
     if (!alvo) continue;
+    // Admin de cliente só atribui a alunos do próprio cliente.
+    if (escopo !== null && alvo.clienteId !== escopo) continue;
     const atrib = await prisma.atribuicao.upsert({
       where: { treinamentoId_usuarioId: { treinamentoId, usuarioId } },
       update: { prazo, concluidoEm, nota: null },
@@ -656,9 +667,12 @@ export async function criarUsuario(formData: FormData) {
 
   const nome = String(formData.get("nome") || "").trim();
   const email = String(formData.get("email") || "").trim().toLowerCase();
-  const papel = String(formData.get("papel") || "aluno") === "admin" ? "admin" : "aluno";
+  const escopo = escopoCliente(usuario);
+  // Admin de cliente só cria aluno (não promove a admin) e sempre no próprio cliente.
+  const papelPedido = String(formData.get("papel") || "aluno") === "admin" ? "admin" : "aluno";
+  const papel = escopo === null ? papelPedido : "aluno";
+  const clienteId = clienteParaCriacao(usuario, String(formData.get("clienteId") || ""));
   const senhaInicial = String(formData.get("senhaInicial") || "");
-  const clienteIdRaw = String(formData.get("clienteId") || "");
 
   // A senha vem gerada pelo cliente; validamos a política no servidor por segurança.
   if (!nome || !email || validarPolitica(senhaInicial)) {
@@ -674,7 +688,7 @@ export async function criarUsuario(formData: FormData) {
       papel,
       senhaHash: hashSenha(senhaInicial),
       senhaTemporaria: true,
-      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
+      clienteId,
     },
   });
 
@@ -697,8 +711,20 @@ export async function atualizarUsuario(formData: FormData) {
   const id = Number(formData.get("id"));
   const nome = String(formData.get("nome") || "").trim();
   const email = String(formData.get("email") || "").trim().toLowerCase();
-  const papel = String(formData.get("papel") || "aluno") === "admin" ? "admin" : "aluno";
-  const clienteIdRaw = String(formData.get("clienteId") || "");
+  const escopo = escopoCliente(usuario);
+
+  const alvoAtual = await prisma.usuario.findUnique({ where: { id } });
+  if (!alvoAtual) redirect("/admin/usuarios");
+  // Admin de cliente só edita usuários do próprio cliente.
+  if (escopo !== null && alvoAtual!.clienteId !== escopo) redirect("/admin/usuarios");
+
+  // Admin de cliente não promove a admin nem move o usuário para outro cliente.
+  const papel = escopo === null
+    ? (String(formData.get("papel") || "aluno") === "admin" ? "admin" : "aluno")
+    : "aluno";
+  const clienteId = escopo === null
+    ? clienteParaCriacao(usuario, String(formData.get("clienteId") || ""))
+    : escopo;
 
   if (!nome || !email) redirect("/admin/usuarios?erro=dados");
   // Não deixa colidir com o email de outro usuário.
@@ -707,7 +733,7 @@ export async function atualizarUsuario(formData: FormData) {
 
   await prisma.usuario.update({
     where: { id },
-    data: { nome, email, papel, clienteId: clienteIdRaw ? Number(clienteIdRaw) : null },
+    data: { nome, email, papel, clienteId },
   });
 
   revalidatePath("/admin/usuarios");
@@ -723,6 +749,13 @@ export async function redefinirSenha(formData: FormData) {
   const id = Number(formData.get("id"));
   const novaSenha = String(formData.get("novaSenha") || "");
   if (validarPolitica(novaSenha)) redirect("/admin/usuarios?erro=curta");
+
+  // Admin de cliente só redefine senha de usuários do próprio cliente.
+  const escopo = escopoCliente(usuario);
+  if (escopo !== null) {
+    const alvoAtual = await prisma.usuario.findUnique({ where: { id } });
+    if (!alvoAtual || alvoAtual.clienteId !== escopo) redirect("/admin/usuarios");
+  }
 
   const alvo = await prisma.usuario.update({
     where: { id },
