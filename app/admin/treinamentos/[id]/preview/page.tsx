@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { VisualizadorSlides } from "@/components/VisualizadorSlides";
 import { VisualizadorArquivo } from "@/components/VisualizadorArquivo";
+import { getUsuarioAtual } from "@/lib/auth";
+import { podeVerTreino } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
 // Pré-visualização do treinamento pelo admin, sem precisar atribuir a um aluno.
@@ -12,6 +14,7 @@ export default async function PreviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const usuario = (await getUsuarioAtual())!;
   const d = await getDict();
   const t = await prisma.treinamento.findUnique({
     where: { id: Number(id) },
@@ -22,6 +25,7 @@ export default async function PreviewPage({
     },
   });
   if (!t) notFound();
+  if (!podeVerTreino(t, usuario)) redirect("/admin/treinamentos");
 
   return (
     <div className="mx-auto max-w-3xl">

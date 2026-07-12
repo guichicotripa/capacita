@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./db";
 import { verificarSenha, hashSenha } from "./password";
-import { validarPolitica, gerarSenhaForte } from "./password-policy";
+import { validarPolitica } from "./password-policy";
+import { ehFullAdmin, escopoCliente, podeEditarTreino, clienteParaCriacao } from "./escopo";
 import {
   criarSessao,
   encerrarSessao,
@@ -22,13 +23,13 @@ import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 import { extrairTextoPptx } from "./pptx";
 
 // Cria um treinamento em slides + quiz a partir de um curso gerado (helper interno).
-async function persistirCurso(curso: CursoGerado, clienteIdRaw: string) {
+async function persistirCurso(curso: CursoGerado, clienteId: number | null) {
   return prisma.treinamento.create({
     data: {
       titulo: curso.titulo,
       descricao: curso.descricao,
       tipo: "slides",
-      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
+      clienteId,
       geradoPorIa: true,
       slides: {
         create: curso.slides.map((s, i) => ({
@@ -262,7 +263,7 @@ export async function gerarTreinamentoIA(formData: FormData) {
   }
 
   const tema = String(formData.get("tema") || "").trim();
-  const clienteIdRaw = String(formData.get("clienteId") || "");
+  const clienteId = clienteParaCriacao(usuario, String(formData.get("clienteId") || ""));
   if (!tema) redirect("/admin/treinamentos/novo");
 
   let curso;
@@ -273,7 +274,7 @@ export async function gerarTreinamentoIA(formData: FormData) {
     redirect("/admin/treinamentos/novo?erro=ia");
   }
 
-  await persistirCurso(curso!, clienteIdRaw);
+  await persistirCurso(curso!, clienteId);
   revalidatePath("/admin/treinamentos");
   redirect("/admin/treinamentos");
 }
@@ -285,7 +286,7 @@ export async function gerarCursoDePPT(formData: FormData) {
   if (!iaDisponivel()) redirect("/admin/treinamentos?erro=ia");
 
   const arquivo = formData.get("arquivo") as File | null;
-  const clienteIdRaw = String(formData.get("clienteId") || "");
+  const clienteId = clienteParaCriacao(usuario, String(formData.get("clienteId") || ""));
   if (!arquivo || arquivo.size === 0) redirect("/admin/treinamentos?erro=ppt");
 
   let texto: string;
@@ -308,7 +309,7 @@ export async function gerarCursoDePPT(formData: FormData) {
     redirect("/admin/treinamentos?erro=ia");
   }
 
-  await persistirCurso(curso!, clienteIdRaw);
+  await persistirCurso(curso!, clienteId);
   revalidatePath("/admin/treinamentos");
   redirect("/admin/treinamentos");
 }
@@ -319,6 +320,8 @@ export async function salvarQuiz(formData: FormData) {
   if (!usuario || usuario.papel !== "admin") redirect("/login");
 
   const treinamentoId = Number(formData.get("treinamentoId"));
+  const treinoQuiz = await prisma.treinamento.findUnique({ where: { id: treinamentoId } });
+  if (!treinoQuiz || !podeEditarTreino(treinoQuiz, usuario)) redirect("/admin/treinamentos");
   const notaMinima = Math.min(100, Math.max(0, Number(formData.get("notaMinima") || 70)));
   const total = Number(formData.get("totalPerguntas") || 0);
 
@@ -372,7 +375,7 @@ export async function subirArquivo(formData: FormData) {
   const arquivo = formData.get("arquivo") as File | null;
   const titulo = String(formData.get("titulo") || "").trim();
   const descricao = String(formData.get("descricao") || "").trim();
-  const clienteIdRaw = String(formData.get("clienteId") || "");
+  const clienteId = clienteParaCriacao(usuario, String(formData.get("clienteId") || ""));
   if (!arquivo || arquivo.size === 0 || !titulo) {
     redirect("/admin/treinamentos/novo?erro=arquivo");
   }
@@ -392,7 +395,7 @@ export async function subirArquivo(formData: FormData) {
       titulo,
       descricao: descricao || arquivo!.name,
       tipo: "arquivo",
-      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
+      clienteId,
       arquivo: {
         create: { mime, nomeOriginal: arquivo!.name, dados: bytes },
       },
@@ -422,6 +425,8 @@ export async function removerTreinamento(formData: FormData) {
   if (!usuario || usuario.papel !== "admin") redirect("/login");
 
   const treinamentoId = Number(formData.get("treinamentoId"));
+  const treino = await prisma.treinamento.findUnique({ where: { id: treinamentoId } });
+  if (!treino || !podeEditarTreino(treino, usuario)) redirect("/admin/treinamentos");
   await prisma.treinamento.delete({ where: { id: treinamentoId } });
 
   revalidatePath("/admin/treinamentos");
@@ -431,8 +436,11 @@ export async function removerTreinamento(formData: FormData) {
 
 // Admin cria um treinamento.
 export async function criarTreinamento(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
   const tipo = String(formData.get("tipo") || "texto");
-  const clienteIdRaw = String(formData.get("clienteId") || "");
+  const clienteId = clienteParaCriacao(usuario, String(formData.get("clienteId") || ""));
 
   await prisma.treinamento.create({
     data: {
@@ -441,7 +449,7 @@ export async function criarTreinamento(formData: FormData) {
       tipo,
       conteudoUrl: tipo === "video" ? String(formData.get("conteudoUrl") || "") : null,
       corpo: tipo === "texto" ? String(formData.get("corpo") || "") : null,
-      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
+      clienteId,
     },
   });
 
@@ -458,18 +466,17 @@ export async function atualizarTreinamento(formData: FormData) {
   const id = Number(formData.get("id"));
   const titulo = String(formData.get("titulo") || "").trim();
   const descricao = String(formData.get("descricao") || "").trim();
-  const clienteIdRaw = String(formData.get("clienteId") || "");
   if (!id || !titulo) redirect(`/admin/treinamentos/${id}/editar?erro=dados`);
 
   const treino = await prisma.treinamento.findUnique({ where: { id } });
-  if (!treino) redirect("/admin/treinamentos");
+  if (!treino || !podeEditarTreino(treino, usuario)) redirect("/admin/treinamentos");
 
   await prisma.treinamento.update({
     where: { id },
     data: {
       titulo,
       descricao,
-      clienteId: clienteIdRaw ? Number(clienteIdRaw) : null,
+      clienteId: clienteParaCriacao(usuario, String(formData.get("clienteId") || "")),
       conteudoUrl: treino!.tipo === "video" ? String(formData.get("conteudoUrl") || "") : treino!.conteudoUrl,
       corpo: treino!.tipo === "texto" ? String(formData.get("corpo") || "") : treino!.corpo,
     },
@@ -625,10 +632,10 @@ export async function trocarSenha(formData: FormData) {
   redirect("/conta?ok=senha");
 }
 
-// Admin cria um novo cliente (empresa). Onboarding de nova conta.
+// Admin GERAL cria um novo cliente (empresa). Onboarding de nova conta.
 export async function criarCliente(formData: FormData) {
   const usuario = await getUsuarioAtual();
-  if (!usuario || usuario.papel !== "admin") redirect("/login");
+  if (!usuario || !ehFullAdmin(usuario)) redirect("/login");
 
   const nome = String(formData.get("nome") || "").trim();
   if (!nome) redirect("/admin/clientes?erro=nome");

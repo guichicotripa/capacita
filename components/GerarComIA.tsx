@@ -30,6 +30,9 @@ function Botao({
 
 function SelectCliente({ clientes }: { clientes: { id: number; nome: string }[] }) {
   const d = useDict();
+  // Sem clientes para escolher (admin de cliente, ou nenhum cliente): não mostra
+  // o seletor; o servidor decide o clienteId.
+  if (clientes.length === 0) return null;
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.cliente}</span>

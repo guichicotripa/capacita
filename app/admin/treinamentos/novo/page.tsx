@@ -4,6 +4,8 @@ import { criarTreinamento } from "@/lib/actions";
 import { SubirApresentacao, GerarPorTema } from "@/components/GerarComIA";
 import { AbasCriacao } from "@/components/AbasCriacao";
 import { IconArrowLeft } from "@/components/Icones";
+import { getUsuarioAtual } from "@/lib/auth";
+import { ehFullAdmin } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
 export default async function NovoTreinamentoPage({
@@ -12,8 +14,11 @@ export default async function NovoTreinamentoPage({
   searchParams: Promise<{ erro?: string }>;
 }) {
   const { erro } = await searchParams;
+  const usuario = (await getUsuarioAtual())!;
+  const full = ehFullAdmin(usuario);
   const d = await getDict();
-  const clientes = await prisma.cliente.findMany({ orderBy: { nome: "asc" } });
+  // Só o admin geral escolhe o cliente; admin de cliente cria sempre no seu.
+  const clientes = full ? await prisma.cliente.findMany({ orderBy: { nome: "asc" } }) : [];
 
   return (
     <div>
@@ -75,16 +80,18 @@ async function FormManual({ clientes }: { clientes: { id: number; nome: string }
       <Campo label={d.admin.treinos.conteudoTexto}>
         <textarea name="corpo" rows={4} className={inputCls} />
       </Campo>
-      <Campo label={d.admin.gerarIA.cliente}>
-        <select name="clienteId" className={inputCls} defaultValue="">
-          <option value="">{d.admin.gerarIA.global}</option>
-          {clientes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nome}
-            </option>
-          ))}
-        </select>
-      </Campo>
+      {clientes.length > 0 && (
+        <Campo label={d.admin.gerarIA.cliente}>
+          <select name="clienteId" className={inputCls} defaultValue="">
+            <option value="">{d.admin.gerarIA.global}</option>
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nome}
+              </option>
+            ))}
+          </select>
+        </Campo>
+      )}
       <button className="w-full rounded-md bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
         {d.admin.treinos.criar}
       </button>

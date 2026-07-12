@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUsuarioAtual } from "@/lib/auth";
 import { getDict } from "@/lib/i18n-server";
+import { ehFullAdmin } from "@/lib/escopo";
 import { Header } from "@/components/Header";
 
 export default async function AdminLayout({
@@ -14,6 +15,7 @@ export default async function AdminLayout({
   if (usuario.senhaTemporaria) redirect("/trocar-senha");
   if (usuario.papel !== "admin") redirect("/aluno");
   const d = await getDict();
+  const full = ehFullAdmin(usuario);
 
   return (
     <>
@@ -27,9 +29,12 @@ export default async function AdminLayout({
         <Link href="/admin/treinamentos" className="hover:text-slate-900">
           {d.nav.treinamentos}
         </Link>
-        <Link href="/admin/clientes" className="hover:text-slate-900">
-          {d.nav.clientes}
-        </Link>
+        {/* Só o admin geral cria/gerencia empresas-cliente. */}
+        {full && (
+          <Link href="/admin/clientes" className="hover:text-slate-900">
+            {d.nav.clientes}
+          </Link>
+        )}
         <Link href="/admin/usuarios" className="hover:text-slate-900">
           {d.nav.usuarios}
         </Link>

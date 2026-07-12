@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { getUsuarioAtual } from "@/lib/auth";
+import { escopoCliente } from "@/lib/escopo";
 import { prisma } from "@/lib/db";
 import { statusDe, formatarData, type StatusAtribuicao } from "@/lib/status";
 import { getDict } from "@/lib/i18n-server";
@@ -57,8 +58,10 @@ export async function GET(req: NextRequest) {
   }
 
   const d = await getDict();
+  const escopo = escopoCliente(usuario);
   const clienteParam = req.nextUrl.searchParams.get("cliente");
-  const clienteId = clienteParam ? Number(clienteParam) : null;
+  // Admin de cliente exporta só o próprio cliente; o parâmetro é ignorado.
+  const clienteId = escopo ?? (clienteParam ? Number(clienteParam) : null);
 
   const [atribuicoes, clienteSel] = await Promise.all([
     prisma.atribuicao.findMany({

@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { atualizarTreinamento } from "@/lib/actions";
 import { EditorSlides } from "@/components/EditorSlides";
+import { getUsuarioAtual } from "@/lib/auth";
+import { ehFullAdmin, podeEditarTreino } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
 const inputCls =
@@ -17,17 +19,21 @@ export default async function EditarTreinamentoPage({
 }) {
   const { id } = await params;
   const { erro } = await searchParams;
+  const usuario = (await getUsuarioAtual())!;
   const d = await getDict();
 
-  const [treino, clientes] = await Promise.all([
-    prisma.treinamento.findUnique({
-      where: { id: Number(id) },
-      include: { slides: { orderBy: { ordem: "asc" } } },
-    }),
-    prisma.cliente.findMany({ orderBy: { nome: "asc" } }),
-  ]);
+  const treino = await prisma.treinamento.findUnique({
+    where: { id: Number(id) },
+    include: { slides: { orderBy: { ordem: "asc" } } },
+  });
 
   if (!treino) notFound();
+  // Só edita treino que este admin pode editar (próprio cliente; globais são do full admin).
+  if (!podeEditarTreino(treino, usuario)) redirect("/admin/treinamentos");
+  // Só o full admin escolhe o cliente do treino; admin de cliente fica no seu.
+  const clientes = ehFullAdmin(usuario)
+    ? await prisma.cliente.findMany({ orderBy: { nome: "asc" } })
+    : [];
 
   const rotuloTipo =
     treino.tipo === "video"
@@ -64,16 +70,19 @@ export default async function EditarTreinamentoPage({
         <Campo label={d.admin.editar.descricao}>
           <input name="descricao" defaultValue={treino.descricao} className={inputCls} />
         </Campo>
-        <Campo label={d.admin.editar.cliente}>
-          <select name="clienteId" defaultValue={treino.clienteId ?? ""} className={inputCls}>
-            <option value="">{d.admin.editar.global}</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </select>
-        </Campo>
+        {/* Só o admin geral escolhe/muda o cliente do treino. */}
+        {ehFullAdmin(usuario) && (
+          <Campo label={d.admin.editar.cliente}>
+            <select name="clienteId" defaultValue={treino.clienteId ?? ""} className={inputCls}>
+              <option value="">{d.admin.editar.global}</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+          </Campo>
+        )}
 
         {treino.tipo === "video" && (
           <Campo label={d.admin.editar.urlVideo}>

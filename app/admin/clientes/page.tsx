@@ -1,5 +1,8 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { statusDe } from "@/lib/status";
+import { getUsuarioAtual } from "@/lib/auth";
+import { ehFullAdmin } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 import { FormNovoCliente } from "@/components/FormNovoCliente";
 
@@ -9,6 +12,9 @@ export default async function ClientesPage({
   searchParams: Promise<{ erro?: string; ok?: string }>;
 }) {
   const { erro, ok } = await searchParams;
+  const usuario = (await getUsuarioAtual())!;
+  // Gerenciar empresas-cliente é exclusivo do admin geral.
+  if (!ehFullAdmin(usuario)) redirect("/admin");
   const d = await getDict();
   const clientes = await prisma.cliente.findMany({
     orderBy: { nome: "asc" },

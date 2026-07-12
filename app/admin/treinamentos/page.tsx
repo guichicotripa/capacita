@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { BotaoRemover } from "@/components/BotaoRemover";
 import { IconChartBar, IconChecklist, IconEye, IconPencil, IconPlus } from "@/components/Icones";
+import { getUsuarioAtual } from "@/lib/auth";
+import { escopoCliente, podeEditarTreino } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
 export default async function TreinamentosPage({
@@ -10,8 +12,12 @@ export default async function TreinamentosPage({
   searchParams: Promise<{ ok?: string }>;
 }) {
   const { ok } = await searchParams;
+  const usuario = (await getUsuarioAtual())!;
+  const escopo = escopoCliente(usuario);
   const d = await getDict();
   const treinamentos = await prisma.treinamento.findMany({
+    // Admin de cliente vê os treinos do próprio cliente + os globais.
+    where: escopo === null ? {} : { OR: [{ clienteId: escopo }, { clienteId: null }] },
     include: {
       cliente: true,
       _count: { select: { atribuicoes: true, perguntas: true } },
@@ -86,15 +92,20 @@ export default async function TreinamentosPage({
                     >
                       <IconEye />
                     </IconLink>
-                    <IconLink href={`/admin/treinamentos/${t.id}/editar`} titulo={d.admin.treinos.editar}>
-                      <IconPencil />
-                    </IconLink>
-                    <IconLink
-                      href={`/admin/treinamentos/${t.id}/quiz`}
-                      titulo={t._count.perguntas > 0 ? d.admin.treinos.editarQuiz : d.admin.treinos.addQuiz}
-                    >
-                      <IconChecklist />
-                    </IconLink>
+                    {/* Editar/quiz/remover só para treinos que este admin pode editar. */}
+                    {podeEditarTreino(t, usuario) && (
+                      <>
+                        <IconLink href={`/admin/treinamentos/${t.id}/editar`} titulo={d.admin.treinos.editar}>
+                          <IconPencil />
+                        </IconLink>
+                        <IconLink
+                          href={`/admin/treinamentos/${t.id}/quiz`}
+                          titulo={t._count.perguntas > 0 ? d.admin.treinos.editarQuiz : d.admin.treinos.addQuiz}
+                        >
+                          <IconChecklist />
+                        </IconLink>
+                      </>
+                    )}
                     <IconLink
                       href={`/admin/treinamentos/${t.id}/resultados`}
                       titulo={d.admin.treinos.resultados}
@@ -102,7 +113,9 @@ export default async function TreinamentosPage({
                     >
                       <IconChartBar />
                     </IconLink>
-                    <BotaoRemover treinamentoId={t.id} titulo={t.titulo} />
+                    {podeEditarTreino(t, usuario) && (
+                      <BotaoRemover treinamentoId={t.id} titulo={t.titulo} />
+                    )}
                   </div>
                 </td>
               </tr>

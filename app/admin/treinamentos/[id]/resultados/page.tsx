@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUsuarioAtual } from "@/lib/auth";
+import { podeVerTreino, escopoCliente } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
 // Análise da avaliação de um treinamento: acerto por pergunta e quem errou cada uma
@@ -11,16 +13,23 @@ export default async function ResultadosPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const usuario = (await getUsuarioAtual())!;
+  const escopo = escopoCliente(usuario);
   const d = await getDict();
 
   const t = await prisma.treinamento.findUnique({
     where: { id: Number(id) },
     include: {
       perguntas: { orderBy: { ordem: "asc" }, include: { alternativas: true } },
-      atribuicoes: { include: { usuario: { select: { nome: true } } } },
+      // Admin de cliente só vê tentativas dos próprios alunos, mesmo em treino global.
+      atribuicoes: {
+        where: escopo === null ? {} : { usuario: { clienteId: escopo } },
+        include: { usuario: { select: { nome: true } } },
+      },
     },
   });
   if (!t) notFound();
+  if (!podeVerTreino(t, usuario)) redirect("/admin/treinamentos");
 
   const tentativas = t.atribuicoes.filter((a) => a.ultimasRespostas);
   const nPart = tentativas.length;

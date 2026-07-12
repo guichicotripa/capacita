@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { salvarQuiz } from "@/lib/actions";
+import { getUsuarioAtual } from "@/lib/auth";
+import { podeEditarTreino } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
 const SLOTS = 6; // número fixo de perguntas editáveis
@@ -14,6 +16,7 @@ export default async function QuizPage({
 }) {
   const { id } = await params;
   const treinamentoId = Number(id);
+  const usuario = (await getUsuarioAtual())!;
   const d = await getDict();
 
   const treinamento = await prisma.treinamento.findUnique({
@@ -26,6 +29,7 @@ export default async function QuizPage({
     },
   });
   if (!treinamento) notFound();
+  if (!podeEditarTreino(treinamento, usuario)) redirect("/admin/treinamentos");
 
   return (
     <div className="mx-auto max-w-2xl">

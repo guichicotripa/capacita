@@ -4,6 +4,8 @@ import { statusDe, formatarData } from "@/lib/status";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BotaoDesatribuir } from "@/components/BotaoDesatribuir";
 import { enviarLembretesAction } from "@/lib/actions";
+import { getUsuarioAtual } from "@/lib/auth";
+import { escopoCliente } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
 export default async function RelatorioPage({
@@ -12,10 +14,15 @@ export default async function RelatorioPage({
   searchParams: Promise<{ cliente?: string; ok?: string; n?: string; t?: string; v?: string; a?: string }>;
 }) {
   const { cliente, ok, n, t: totalLembretes, v: vencLembretes, a: aVencLembretes } = await searchParams;
-  const clienteId = cliente ? Number(cliente) : null;
+  const usuario = (await getUsuarioAtual())!;
+  const escopo = escopoCliente(usuario);
   const d = await getDict();
 
-  const clientes = await prisma.cliente.findMany({ orderBy: { nome: "asc" } });
+  // Admin de cliente é travado no próprio cliente; o filtro por URL é ignorado.
+  const clienteId = escopo ?? (cliente ? Number(cliente) : null);
+
+  // Só o full admin vê o seletor de clientes.
+  const clientes = escopo === null ? await prisma.cliente.findMany({ orderBy: { nome: "asc" } }) : [];
 
   const atribuicoes = await prisma.atribuicao.findMany({
     where: clienteId ? { usuario: { clienteId } } : {},
@@ -102,18 +109,20 @@ export default async function RelatorioPage({
         </div>
       </div>
 
-      {/* Filtro por cliente */}
-      <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <FiltroLink ativo={!clienteId} href="/admin" rotulo={d.report.todosClientes} />
-        {clientes.map((c) => (
-          <FiltroLink
-            key={c.id}
-            ativo={clienteId === c.id}
-            href={`/admin?cliente=${c.id}`}
-            rotulo={c.nome}
-          />
-        ))}
-      </div>
+      {/* Filtro por cliente (só o admin geral escolhe cliente) */}
+      {escopo === null && (
+        <div className="mb-4 flex flex-wrap gap-2 text-sm">
+          <FiltroLink ativo={!clienteId} href="/admin" rotulo={d.report.todosClientes} />
+          {clientes.map((c) => (
+            <FiltroLink
+              key={c.id}
+              ativo={clienteId === c.id}
+              href={`/admin?cliente=${c.id}`}
+              rotulo={c.nome}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Tabela */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
