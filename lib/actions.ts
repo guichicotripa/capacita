@@ -269,12 +269,13 @@ export async function gerarTreinamentoIA(formData: FormData) {
   }
 
   const tema = String(formData.get("tema") || "").trim();
+  const instrucoes = String(formData.get("instrucoes") || "").trim();
   const clienteId = clienteParaCriacao(usuario, String(formData.get("clienteId") || ""));
   if (!tema) redirect("/admin/treinamentos/novo");
 
   let curso;
   try {
-    curso = await gerarCursoIA(tema);
+    curso = await gerarCursoIA(tema, undefined, instrucoes || undefined);
   } catch (e) {
     console.error("Falha na geração por IA:", e);
     redirect("/admin/treinamentos/novo?erro=ia");

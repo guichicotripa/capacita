@@ -22,12 +22,16 @@ export type CursoGerado = {
   }[];
 };
 
-const PROMPT = (tema: string, fonte?: string) =>
+const PROMPT = (tema: string, fonte?: string, instrucoes?: string) =>
   `Você é um especialista em treinamento de conscientização de segurança da informação.
 Crie um treinamento curto sobre o tema: "${tema}".
 ${
   fonte
     ? `\nBaseie o conteúdo NESTE material (extraído de uma apresentação); resuma e organize de forma didática:\n"""\n${fonte.slice(0, 12000)}\n"""\n`
+    : ""
+}${
+  instrucoes
+    ? `\nInstruções adicionais do administrador (siga-as ao montar o conteúdo — tom, foco, exemplos, público):\n"""\n${instrucoes.slice(0, 2000)}\n"""\n`
     : ""
 }
 Responda APENAS com um objeto JSON válido (sem markdown, sem comentários) neste formato:
@@ -68,13 +72,17 @@ function extrairJson(texto: string): string {
   return semCerca.slice(inicio, fim + 1);
 }
 
-export async function gerarCursoIA(tema: string, fonte?: string): Promise<CursoGerado> {
+export async function gerarCursoIA(
+  tema: string,
+  fonte?: string,
+  instrucoes?: string
+): Promise<CursoGerado> {
   const client = new Anthropic({ apiKey: anthropicKey() });
 
   const response = await client.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 8000,
-    messages: [{ role: "user", content: PROMPT(tema, fonte) }],
+    messages: [{ role: "user", content: PROMPT(tema, fonte, instrucoes) }],
   });
 
   // Log de uso de tokens (entra/sai) — útil para acompanhar custo por geração.

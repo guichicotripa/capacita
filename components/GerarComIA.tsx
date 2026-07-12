@@ -92,6 +92,17 @@ export function GerarPorTema({ clientes }: { clientes: { id: number; nome: strin
         <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.temaLabel}</span>
         <input name="tema" required className={inputCls} placeholder="Ex: Engenharia social no WhatsApp" />
       </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-600">
+          {d.admin.gerarIA.instrucoesLabel}
+        </span>
+        <textarea
+          name="instrucoes"
+          rows={3}
+          className={inputCls}
+          placeholder={d.admin.gerarIA.instrucoesPh}
+        />
+      </label>
       <SelectCliente clientes={clientes} />
       <Botao rotulo={d.admin.gerarIA.gerarBtn} pendingRotulo={d.admin.gerarIA.gerando} />
       <p className="text-xs text-slate-500">{d.admin.gerarIA.gerarAjuda}</p>
