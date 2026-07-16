@@ -66,7 +66,9 @@ const LOCK_MIN = 15;
 
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
-  const senha = String(formData.get("senha") || "");
+  // trim: senhas coladas costumam trazer espaço/quebra no fim; não guardamos nem
+  // aceitamos senha com espaço nas bordas, então aparar aqui evita "senha errada".
+  const senha = String(formData.get("senha") || "").trim();
 
   const usuario = await prisma.usuario.findUnique({ where: { email } });
 
@@ -591,9 +593,9 @@ export async function trocarSenha(formData: FormData) {
   const usuario = await getUsuarioAtual();
   if (!usuario) redirect("/login");
 
-  const atual = String(formData.get("senhaAtual") || "");
-  const nova = String(formData.get("novaSenha") || "");
-  const confirmar = String(formData.get("confirmar") || "");
+  const atual = String(formData.get("senhaAtual") || "").trim();
+  const nova = String(formData.get("novaSenha") || "").trim();
+  const confirmar = String(formData.get("confirmar") || "").trim();
   const destino = usuario!.senhaTemporaria ? "/trocar-senha" : "/conta";
 
   if (!verificarSenha(atual, usuario!.senhaHash)) redirect(`${destino}?erro=atual`);
@@ -673,7 +675,7 @@ export async function criarUsuario(formData: FormData) {
   const papelPedido = String(formData.get("papel") || "aluno") === "admin" ? "admin" : "aluno";
   const papel = escopo === null ? papelPedido : "aluno";
   const clienteId = clienteParaCriacao(usuario, String(formData.get("clienteId") || ""));
-  const senhaInicial = String(formData.get("senhaInicial") || "");
+  const senhaInicial = String(formData.get("senhaInicial") || "").trim();
 
   // A senha vem gerada pelo cliente; validamos a política no servidor por segurança.
   if (!nome || !email || validarPolitica(senhaInicial)) {
@@ -748,7 +750,7 @@ export async function redefinirSenha(formData: FormData) {
   if (!usuario || usuario.papel !== "admin") redirect("/login");
 
   const id = Number(formData.get("id"));
-  const novaSenha = String(formData.get("novaSenha") || "");
+  const novaSenha = String(formData.get("novaSenha") || "").trim();
   if (validarPolitica(novaSenha)) redirect("/admin/usuarios?erro=curta");
 
   // Admin de cliente só redefine senha de usuários do próprio cliente.

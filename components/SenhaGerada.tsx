@@ -30,7 +30,7 @@ function gerar(tam = 16): string {
 export function SenhaGerada({ name }: { name: string }) {
   const d = useDict();
   const [senha, setSenha] = useState("");
-  const [mostrar, setMostrar] = useState(false);
+  const [mostrar, setMostrar] = useState(true);
   const [copiado, setCopiado] = useState(false);
 
   // Gera no cliente após montar (evita divergência de hidratação).
