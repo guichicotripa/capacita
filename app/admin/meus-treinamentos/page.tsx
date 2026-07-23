@@ -5,7 +5,9 @@ import { statusDe, formatarData } from "@/lib/status";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getDict } from "@/lib/i18n-server";
 
-export default async function AlunoHome() {
+// Treinamentos atribuídos ao próprio admin. O admin de cliente também precisa
+// fazer os cursos (pedido do Danilo), então tem a lista dele aqui no painel.
+export default async function MeusTreinamentosPage() {
   const usuario = (await getUsuarioAtual())!;
   const d = await getDict();
 
@@ -17,11 +19,8 @@ export default async function AlunoHome() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold">{d.aluno.meus}</h1>
-      <p className="mb-6 text-sm text-slate-500">
-        {usuario.cliente ? `${usuario.cliente.nome} · ` : ""}
-        {usuario.nome}
-      </p>
+      <h1 className="text-xl font-semibold">{d.nav.meusTreinamentos}</h1>
+      <p className="mb-6 text-sm text-slate-500">{usuario.nome}</p>
 
       {atribuicoes.length === 0 && (
         <p className="text-sm text-slate-500">{d.aluno.nenhum}</p>
@@ -62,7 +61,7 @@ export default async function AlunoHome() {
                   </span>
                 ) : (
                   <Link
-                    href={`/aluno/${a.id}`}
+                    href={`/admin/meus-treinamentos/${a.id}`}
                     className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                   >
                     {status === "concluido" ? d.aluno.revisar : d.aluno.abrir}

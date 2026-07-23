@@ -34,6 +34,7 @@ const pt = {
     treinamentos: "Treinamentos",
     clientes: "Clientes",
     usuarios: "Usuários",
+    meusTreinamentos: "Meus treinamentos",
   },
   status: { concluido: "Concluído", pendente: "Pendente", vencido: "Vencido" },
   certificado: {
@@ -379,6 +380,7 @@ const es: Dict = {
     treinamentos: "Capacitaciones",
     clientes: "Clientes",
     usuarios: "Usuarios",
+    meusTreinamentos: "Mis capacitaciones",
   },
   status: { concluido: "Completado", pendente: "Pendiente", vencido: "Vencido" },
   certificado: {

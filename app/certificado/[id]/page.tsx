@@ -4,11 +4,14 @@ import { getUsuarioAtual } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatarData } from "@/lib/status";
 import { codigoCertificado } from "@/lib/certificado";
+import { escopoCliente } from "@/lib/escopo";
 import { BotaoImprimir } from "@/components/BotaoImprimir";
 import { getDict } from "@/lib/i18n-server";
 
 // Certificado de conclusão imprimível de uma atribuição concluída.
-// Acesso: o dono da atribuição ou um admin.
+// Acesso: o dono da atribuição ou um admin. Fica fora de /aluno e /admin de
+// propósito: admin também faz cursos e precisa do próprio certificado, e o
+// layout de aluno bloquearia o acesso dele.
 export default async function CertificadoPage({
   params,
 }: {
@@ -19,19 +22,28 @@ export default async function CertificadoPage({
   if (!usuario) redirect("/login");
   const d = await getDict();
 
+  // Volta para a lista de onde a pessoa veio.
+  const voltarHref = usuario.papel === "admin" ? "/admin/meus-treinamentos" : "/aluno";
+
   const atrib = await prisma.atribuicao.findUnique({
     where: { id: Number(id) },
     include: { treinamento: true, usuario: { include: { cliente: true } } },
   });
   if (!atrib) notFound();
-  // Só o dono ou um admin veem o certificado.
-  if (atrib.usuarioId !== usuario.id && usuario.papel !== "admin") redirect("/aluno");
+  // Só o dono vê o próprio certificado. Admin vê os dos outros, mas admin de
+  // cliente fica restrito ao próprio cliente (senão vazaria entre clientes só
+  // chutando o id da atribuição).
+  const escopo = escopoCliente(usuario);
+  const ehDono = atrib.usuarioId === usuario.id;
+  const adminPodeVer =
+    usuario.papel === "admin" && (escopo === null || atrib.usuario.clienteId === escopo);
+  if (!ehDono && !adminPodeVer) redirect(voltarHref);
 
   if (!atrib.concluidoEm) {
     return (
       <div className="mx-auto max-w-lg p-6 text-center">
         <p className="text-sm text-slate-500">{d.certificado.naoConcluido}</p>
-        <Link href="/aluno" className="mt-4 inline-block text-sm text-slate-600 hover:underline">
+        <Link href={voltarHref} className="mt-4 inline-block text-sm text-slate-600 hover:underline">
           {d.certificado.voltar}
         </Link>
       </div>
@@ -43,7 +55,7 @@ export default async function CertificadoPage({
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <div className="no-print mb-4 flex items-center justify-between">
-        <Link href="/aluno" className="text-sm text-slate-600 hover:underline">
+        <Link href={voltarHref} className="text-sm text-slate-600 hover:underline">
           {d.certificado.voltar}
         </Link>
         <BotaoImprimir rotulo={d.certificado.imprimir} />

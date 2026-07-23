@@ -1,7 +1,9 @@
 import { getUsuarioAtual } from "@/lib/auth";
 import { ConsumoTreinamento } from "@/components/ConsumoTreinamento";
 
-export default async function TreinamentoPage({
+// Admin consumindo um treinamento atribuído a ele (mesma tela do aluno,
+// dentro do painel admin).
+export default async function MeuTreinamentoPage({
   params,
   searchParams,
 }: {
@@ -16,7 +18,7 @@ export default async function TreinamentoPage({
     <ConsumoTreinamento
       atribuicaoId={Number(id)}
       usuarioId={usuario.id}
-      voltarHref="/aluno"
+      voltarHref="/admin/meus-treinamentos"
       nota={nota}
       aprovado={aprovado}
     />

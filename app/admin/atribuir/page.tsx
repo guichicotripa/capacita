@@ -21,8 +21,10 @@ export default async function AtribuirPage({
       where: escopo === null ? {} : { OR: [{ clienteId: escopo }, { clienteId: null }] },
       orderBy: { titulo: "asc" },
     }),
+    // Inclui admins, não só alunos: o admin de cliente também faz os cursos e
+    // precisa aparecer aqui (inclusive para se auto atribuir).
     prisma.usuario.findMany({
-      where: escopo === null ? { papel: "aluno" } : { papel: "aluno", clienteId: escopo },
+      where: escopo === null ? {} : { clienteId: escopo },
       include: { cliente: true },
       orderBy: { nome: "asc" },
     }),

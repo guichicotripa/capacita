@@ -183,6 +183,9 @@ export async function concluir(formData: FormData) {
   const usuario = await getUsuarioAtual();
   if (!usuario) redirect("/login");
 
+  // Admin também faz cursos, mas consome pela aba dele; o destino segue o papel.
+  const base = usuario!.papel === "admin" ? "/admin/meus-treinamentos" : "/aluno";
+
   const atribuicaoId = Number(formData.get("atribuicaoId"));
   const atrib = await prisma.atribuicao.findUnique({
     where: { id: atribuicaoId },
@@ -190,15 +193,15 @@ export async function concluir(formData: FormData) {
   });
 
   if (!atrib || atrib.usuarioId !== usuario!.id) {
-    redirect("/aluno");
+    redirect(base);
   }
   if (statusDe(atrib!) === "vencido") {
     // Prazo expirado: acesso cortado, nao deixa concluir.
-    redirect("/aluno");
+    redirect(base);
   }
   // Se o treinamento tem quiz, a conclusao tem que vir pela avaliacao.
   if (atrib!.treinamento._count.perguntas > 0) {
-    redirect(`/aluno/${atribuicaoId}`);
+    redirect(`${base}/${atribuicaoId}`);
   }
 
   await prisma.atribuicao.update({
@@ -206,8 +209,8 @@ export async function concluir(formData: FormData) {
     data: { concluidoEm: new Date() },
   });
 
-  revalidatePath("/aluno");
-  redirect("/aluno");
+  revalidatePath(base);
+  redirect(base);
 }
 
 // Aluno submete o quiz. Calcula a nota; se >= notaMinima, conclui; senao,
@@ -225,11 +228,14 @@ export async function submeterQuiz(formData: FormData) {
     },
   });
 
-  if (!atrib || atrib.usuarioId !== usuario!.id) redirect("/aluno");
-  if (statusDe(atrib!) === "vencido") redirect("/aluno");
+  // Admin também faz cursos, mas consome pela aba dele; o destino segue o papel.
+  const base = usuario!.papel === "admin" ? "/admin/meus-treinamentos" : "/aluno";
+
+  if (!atrib || atrib.usuarioId !== usuario!.id) redirect(base);
+  if (statusDe(atrib!) === "vencido") redirect(base);
 
   const perguntas = atrib!.treinamento.perguntas;
-  if (perguntas.length === 0) redirect(`/aluno/${atribuicaoId}`);
+  if (perguntas.length === 0) redirect(`${base}/${atribuicaoId}`);
 
   let acertos = 0;
   const respostas: Record<number, number> = {};
@@ -257,8 +263,8 @@ export async function submeterQuiz(formData: FormData) {
     assunto: `Capacita — Resultado: ${atrib!.treinamento.titulo}`,
   });
 
-  revalidatePath("/aluno");
-  redirect(`/aluno/${atribuicaoId}?nota=${nota}&aprovado=${aprovado ? 1 : 0}`);
+  revalidatePath(base);
+  redirect(`${base}/${atribuicaoId}?nota=${nota}&aprovado=${aprovado ? 1 : 0}`);
 }
 
 // Admin gera um treinamento + quiz por IA a partir de um tema.

@@ -38,6 +38,9 @@ export default async function AdminLayout({
         <Link href="/admin/usuarios" className="hover:text-slate-900">
           {d.nav.usuarios}
         </Link>
+        <Link href="/admin/meus-treinamentos" className="hover:text-slate-900">
+          {d.nav.meusTreinamentos}
+        </Link>
       </Header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
     </>
