@@ -22,7 +22,17 @@ export type CursoGerado = {
   }[];
 };
 
-const PROMPT = (tema: string, fonte?: string, instrucoes?: string) =>
+// "topicos" = bullets curtos (padrão). "prosa" = parágrafos descritivos, para
+// quando o admin quer conteúdo explicado e não lista.
+export type FormatoConteudo = "topicos" | "prosa";
+
+// Exportado para ser testável sem chamar a API.
+export const PROMPT = (
+  tema: string,
+  fonte?: string,
+  instrucoes?: string,
+  formato: FormatoConteudo = "topicos"
+) =>
   `Você é um especialista em treinamento de conscientização de segurança da informação.
 Crie um treinamento curto sobre o tema: "${tema}".
 ${
@@ -41,7 +51,11 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem comentários) nest
   "slides": [
     {
       "titulo": "título curto do slide",
-      "conteudo": "3 a 5 tópicos curtos, um por linha (separados por \\n), em linguagem clara para funcionários não técnicos"
+      "conteudo": ${
+        formato === "prosa"
+          ? `"2 a 3 parágrafos descritivos, um por linha (separados por \\\\n), explicando o ponto com contexto e exemplo, em linguagem clara para funcionários não técnicos"`
+          : `"3 a 5 tópicos curtos, um por linha (separados por \\\\n), em linguagem clara para funcionários não técnicos"`
+      }
     }
   ],
   "perguntas": [
@@ -58,7 +72,13 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem comentários) nest
 }
 
 O treinamento é uma apresentação que o aluno passa slide a slide.
-Gere de 5 a 7 slides, cada um com um título e 3 a 5 tópicos curtos (bullets), um por linha.
+${
+  formato === "prosa"
+    ? `Gere de 5 a 7 slides, cada um com um título e 2 a 3 PARÁGRAFOS descritivos, um por linha.
+NÃO use bullets, listas nem frases soltas: escreva texto corrido que explica o ponto,
+com contexto e um exemplo concreto do dia a dia. Cada parágrafo com 2 a 4 frases.`
+    : `Gere de 5 a 7 slides, cada um com um título e 3 a 5 tópicos curtos (bullets), um por linha.`
+}
 O primeiro slide é uma introdução ao tema; o último, um resumo do que fazer na prática.
 Gere exatamente 4 perguntas, cada uma com 4 alternativas e EXATAMENTE uma correta.
 Tudo em português do Brasil.`;
@@ -75,14 +95,15 @@ function extrairJson(texto: string): string {
 export async function gerarCursoIA(
   tema: string,
   fonte?: string,
-  instrucoes?: string
+  instrucoes?: string,
+  formato: FormatoConteudo = "topicos"
 ): Promise<CursoGerado> {
   const client = new Anthropic({ apiKey: anthropicKey() });
 
   const response = await client.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 8000,
-    messages: [{ role: "user", content: PROMPT(tema, fonte, instrucoes) }],
+    messages: [{ role: "user", content: PROMPT(tema, fonte, instrucoes, formato) }],
   });
 
   // Log de uso de tokens (entra/sai) — útil para acompanhar custo por geração.

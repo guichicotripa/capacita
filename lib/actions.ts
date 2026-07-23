@@ -29,13 +29,18 @@ import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 import { extrairTextoPptx } from "./pptx";
 
 // Cria um treinamento em slides + quiz a partir de um curso gerado (helper interno).
-async function persistirCurso(curso: CursoGerado, clienteId: number | null) {
+async function persistirCurso(
+  curso: CursoGerado,
+  clienteId: number | null,
+  formatoConteudo: string = "topicos"
+) {
   return prisma.treinamento.create({
     data: {
       titulo: curso.titulo,
       descricao: curso.descricao,
       tipo: "slides",
       clienteId,
+      formatoConteudo,
       geradoPorIa: true,
       slides: {
         create: curso.slides.map((s, i) => ({
@@ -281,15 +286,18 @@ export async function gerarTreinamentoIA(formData: FormData) {
   const clienteId = clienteParaCriacao(usuario, String(formData.get("clienteId") || ""));
   if (!tema) redirect("/admin/treinamentos/novo");
 
+  // Formato do conteúdo: tópicos (padrão) ou prosa descritiva.
+  const formato = String(formData.get("formato") || "") === "prosa" ? "prosa" : "topicos";
+
   let curso;
   try {
-    curso = await gerarCursoIA(tema, undefined, instrucoes || undefined);
+    curso = await gerarCursoIA(tema, undefined, instrucoes || undefined, formato);
   } catch (e) {
     console.error("Falha na geração por IA:", e);
     redirect("/admin/treinamentos/novo?erro=ia");
   }
 
-  await persistirCurso(curso!, clienteId);
+  await persistirCurso(curso!, clienteId, formato);
   revalidatePath("/admin/treinamentos");
   redirect("/admin/treinamentos");
 }

@@ -45,7 +45,7 @@ export default async function PreviewPage({
         {t.tipo === "arquivo" && t.arquivo ? (
           <VisualizadorArquivo treinamentoId={t.id} mime={t.arquivo.mime} />
         ) : t.tipo === "slides" ? (
-          <VisualizadorSlides slides={t.slides} />
+          <VisualizadorSlides slides={t.slides} formato={t.formatoConteudo} />
         ) : t.tipo === "video" && t.conteudoUrl ? (
           <div className="aspect-video w-full overflow-hidden rounded-md border border-slate-200 bg-black">
             <iframe src={t.conteudoUrl} className="h-full w-full" allowFullScreen title={t.titulo} />

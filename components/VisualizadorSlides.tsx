@@ -13,7 +13,15 @@ type Quiz = {
 
 // Deck navegável: um slide por vez. Se houver quiz, ele é a última página,
 // e só libera depois que o aluno passou por todos os slides.
-export function VisualizadorSlides({ slides, quiz }: { slides: Slide[]; quiz?: Quiz | null }) {
+export function VisualizadorSlides({
+  slides,
+  quiz,
+  formato = "topicos",
+}: {
+  slides: Slide[];
+  quiz?: Quiz | null;
+  formato?: string;
+}) {
   const d = useDict();
   const [idx, setIdx] = useState(0);
   const [visitados, setVisitados] = useState<Set<number>>(() => new Set([0]));
@@ -71,14 +79,23 @@ export function VisualizadorSlides({ slides, quiz }: { slides: Slide[]; quiz?: Q
             {d.treino.slideDe(idx + 1, total)}
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-900">{slide!.titulo}</h2>
-          <ul className="mt-5 space-y-3">
-            {topicos.map((t, i) => (
-              <li key={i} className="flex gap-3 text-slate-700">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                <span>{t}</span>
-              </li>
-            ))}
-          </ul>
+          {/* Prosa vira parágrafo corrido; tópicos seguem com bullet. */}
+          {formato === "prosa" ? (
+            <div className="mt-5 space-y-4 leading-relaxed text-slate-700">
+              {topicos.map((t, i) => (
+                <p key={i}>{t}</p>
+              ))}
+            </div>
+          ) : (
+            <ul className="mt-5 space-y-3">
+              {topicos.map((t, i) => (
+                <li key={i} className="flex gap-3 text-slate-700">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           {temQuiz && idx === slides.length - 1 && !quizLiberado && (
             <p className="mt-auto pt-4 text-xs text-amber-600">{d.treino.vejaTodosSlides}</p>
           )}

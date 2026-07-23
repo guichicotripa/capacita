@@ -80,7 +80,7 @@ export async function ConsumoTreinamento({
         {t.tipo === "arquivo" && t.arquivo ? (
           <VisualizadorArquivo treinamentoId={t.id} mime={t.arquivo.mime} quiz={quizData} />
         ) : t.tipo === "slides" ? (
-          <VisualizadorSlides slides={t.slides} quiz={quizData} />
+          <VisualizadorSlides slides={t.slides} quiz={quizData} formato={t.formatoConteudo} />
         ) : t.tipo === "video" && t.conteudoUrl ? (
           <div className="aspect-video w-full overflow-hidden rounded-md border border-slate-200 bg-black">
             <iframe
