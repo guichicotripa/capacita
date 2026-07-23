@@ -663,7 +663,22 @@ export async function criarCliente(formData: FormData) {
   const existe = await prisma.cliente.findFirst({ where: { nome } });
   if (existe) redirect("/admin/clientes?erro=existe");
 
-  await prisma.cliente.create({ data: { nome } });
+  // Campos de cadastro da empresa: opcionais, guardamos null quando em branco.
+  const opcional = (campo: string) => {
+    const v = String(formData.get(campo) || "").trim();
+    return v || null;
+  };
+
+  await prisma.cliente.create({
+    data: {
+      nome,
+      cnpj: opcional("cnpj"),
+      endereco: opcional("endereco"),
+      email: opcional("email"),
+      telefone: opcional("telefone"),
+      responsavel: opcional("responsavel"),
+    },
+  });
   revalidatePath("/admin/clientes");
   redirect("/admin/clientes?ok=criado");
 }
@@ -695,6 +710,8 @@ export async function criarUsuario(formData: FormData) {
       nome,
       email,
       papel,
+      telefone: String(formData.get("telefone") || "").trim() || null,
+      cargo: String(formData.get("cargo") || "").trim() || null,
       senhaHash: hashSenha(senhaInicial),
       senhaTemporaria: true,
       clienteId,
@@ -742,7 +759,14 @@ export async function atualizarUsuario(formData: FormData) {
 
   await prisma.usuario.update({
     where: { id },
-    data: { nome, email, papel, clienteId },
+    data: {
+      nome,
+      email,
+      papel,
+      clienteId,
+      telefone: String(formData.get("telefone") || "").trim() || null,
+      cargo: String(formData.get("cargo") || "").trim() || null,
+    },
   });
 
   revalidatePath("/admin/usuarios");

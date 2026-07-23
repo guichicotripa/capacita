@@ -34,6 +34,11 @@ export function FormNovoUsuario({ clientes, full = true }: { clientes: Cliente[]
         <Campo nome="nome" rotulo={d.admin.usuarios.nome} />
         <Campo nome="email" rotulo={d.admin.usuarios.email} tipo="email" />
       </div>
+      {/* Contato e cargo: opcionais, para o cadastro da pessoa ficar completo. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Campo nome="telefone" rotulo={d.admin.usuarios.telefone} tipo="tel" obrigatorio={false} />
+        <Campo nome="cargo" rotulo={d.admin.usuarios.cargo} obrigatorio={false} />
+      </div>
       {/* Cliente e papel só para o admin geral; admin de cliente cria aluno no seu cliente. */}
       {full && (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -85,10 +90,12 @@ function Campo({
   nome,
   rotulo,
   tipo = "text",
+  obrigatorio = true,
 }: {
   nome: string;
   rotulo: string;
   tipo?: string;
+  obrigatorio?: boolean;
 }) {
   return (
     <div>
@@ -96,7 +103,7 @@ function Campo({
       <input
         name={nome}
         type={tipo}
-        required
+        required={obrigatorio}
         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
       />
     </div>

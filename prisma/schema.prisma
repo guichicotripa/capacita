@@ -15,6 +15,13 @@ datasource db {
 model Cliente {
   id           Int           @id @default(autoincrement())
   nome         String
+  // Cadastro da empresa. Opcionais de proposito: clientes antigos foram criados
+  // so com nome e nao podem quebrar.
+  cnpj         String?
+  endereco     String?
+  email        String?
+  telefone     String?
+  responsavel  String? // pessoa de contato na empresa
   usuarios     Usuario[]
   treinamentos Treinamento[]
   criadoEm     DateTime      @default(now())
@@ -26,6 +33,8 @@ model Usuario {
   email       String       @unique
   senhaHash   String
   papel       String // "admin" | "aluno"
+  telefone    String? // contato do usuario
+  cargo       String? // cargo/funcao na empresa
   clienteId   Int?
   cliente     Cliente?     @relation(fields: [clienteId], references: [id])
   atribuicoes Atribuicao[]

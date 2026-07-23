@@ -60,6 +60,20 @@ export default async function ClientesPage({
                   {d.admin.clientes.resumo(c.usuarios.length, concluidos, totalAtrib.length)}
                 </span>
               </div>
+              {/* Cadastro da empresa: só mostra o que estiver preenchido. */}
+              {[c.cnpj, c.responsavel, c.telefone, c.email, c.endereco].some(Boolean) && (
+                <p className="mt-1 text-xs text-slate-400">
+                  {[
+                    c.cnpj && `${d.admin.clientes.cnpj}: ${c.cnpj}`,
+                    c.responsavel && `${d.admin.clientes.responsavel}: ${c.responsavel}`,
+                    c.telefone,
+                    c.email,
+                    c.endereco,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
               <ul className="mt-3 divide-y divide-slate-100 text-sm">
                 {c.usuarios.map((u) => {
                   const feitos = u.atribuicoes.filter((a) => statusDe(a) === "concluido").length;

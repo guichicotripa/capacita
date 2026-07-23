@@ -11,6 +11,8 @@ type Usuario = {
   nome: string;
   email: string;
   papel: string;
+  telefone: string | null;
+  cargo: string | null;
   clienteId: number | null;
   clienteNome: string | null;
 };
@@ -44,6 +46,11 @@ export function UsuarioItem({
           <p className="text-sm text-slate-500">
             {usuario.email} · {usuario.clienteNome ?? d.admin.usuarios.semCliente}
           </p>
+          {(usuario.cargo || usuario.telefone) && (
+            <p className="text-xs text-slate-400">
+              {[usuario.cargo, usuario.telefone].filter(Boolean).join(" · ")}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 gap-2 text-xs">
           <button
@@ -83,6 +90,19 @@ export function UsuarioItem({
             defaultValue={usuario.email}
             required
             placeholder={d.admin.usuarios.email}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+          />
+          <input
+            name="telefone"
+            type="tel"
+            defaultValue={usuario.telefone ?? ""}
+            placeholder={d.admin.usuarios.telefone}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+          />
+          <input
+            name="cargo"
+            defaultValue={usuario.cargo ?? ""}
+            placeholder={d.admin.usuarios.cargo}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
           />
           {/* Cliente e papel só editáveis pelo admin geral. */}

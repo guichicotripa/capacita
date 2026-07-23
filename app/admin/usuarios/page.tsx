@@ -66,6 +66,8 @@ export default async function UsuariosPage({
               nome: u.nome,
               email: u.email,
               papel: u.papel,
+              telefone: u.telefone,
+              cargo: u.cargo,
               clienteId: u.clienteId,
               clienteNome: u.cliente?.nome ?? null,
             }}
