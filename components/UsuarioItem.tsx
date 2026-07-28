@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { atualizarUsuario, redefinirSenha } from "@/lib/actions";
+import {
+  atualizarUsuario,
+  gerarNovoConvite,
+  alternarAtivoUsuario,
+  excluirUsuario,
+} from "@/lib/actions";
 import { useDict } from "./I18nProvider";
-import { SenhaGerada } from "./SenhaGerada";
+import { CopiarLink } from "./CopiarLink";
 
 type Cliente = { id: number; nome: string };
 type Usuario = {
@@ -13,35 +18,43 @@ type Usuario = {
   papel: string;
   telefone: string | null;
   cargo: string | null;
+  ativo: boolean;
   clienteId: number | null;
   clienteNome: string | null;
+  linkConvite: string | null;
 };
 
-// Linha de usuário com edição inline (infos) e redefinição de senha.
-// full = admin geral (edita cliente e papel); admin de cliente edita só nome/email/senha.
+// Linha de usuário com edição inline, link de acesso, ativar/desativar e excluir.
+// full = admin geral (edita cliente e papel); admin de cliente edita só nome/email.
 export function UsuarioItem({
   usuario,
   clientes,
   full = true,
+  destacarLink = false,
 }: {
   usuario: Usuario;
   clientes: Cliente[];
   full?: boolean;
+  destacarLink?: boolean;
 }) {
   const d = useDict();
   const [editando, setEditando] = useState(false);
-  const [resetando, setResetando] = useState(false);
   const rotuloPapel = usuario.papel === "admin" ? d.admin.usuarios.admin : d.admin.usuarios.aluno;
 
   return (
-    <div className="px-4 py-3">
+    <div className={`px-4 py-3 ${usuario.ativo ? "" : "bg-slate-50"}`}>
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className={usuario.ativo ? "" : "opacity-60"}>
           <p className="font-medium text-slate-800">
             {usuario.nome}
             <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-500">
               {rotuloPapel}
             </span>
+            {!usuario.ativo && (
+              <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-normal text-amber-700">
+                {d.admin.usuarios.inativo}
+              </span>
+            )}
           </p>
           <p className="text-sm text-slate-500">
             {usuario.email} · {usuario.clienteNome ?? d.admin.usuarios.semCliente}
@@ -52,27 +65,46 @@ export function UsuarioItem({
             </p>
           )}
         </div>
-        <div className="flex shrink-0 gap-2 text-xs">
+        <div className="flex shrink-0 flex-wrap justify-end gap-1 text-xs">
           <button
-            onClick={() => {
-              setEditando((v) => !v);
-              setResetando(false);
-            }}
+            onClick={() => setEditando((v) => !v)}
             className="rounded px-2 py-1 font-medium text-slate-600 hover:bg-slate-100"
           >
             {editando ? d.admin.usuarios.fechar : d.admin.usuarios.editar}
           </button>
-          <button
-            onClick={() => {
-              setResetando((v) => !v);
-              setEditando(false);
+          <form action={gerarNovoConvite}>
+            <input type="hidden" name="id" value={usuario.id} />
+            <button className="rounded px-2 py-1 font-medium text-slate-600 hover:bg-slate-100">
+              {d.admin.usuarios.gerarLink}
+            </button>
+          </form>
+          <form action={alternarAtivoUsuario}>
+            <input type="hidden" name="id" value={usuario.id} />
+            <button className="rounded px-2 py-1 font-medium text-slate-600 hover:bg-slate-100">
+              {usuario.ativo ? d.admin.usuarios.desativar : d.admin.usuarios.reativar}
+            </button>
+          </form>
+          <form
+            action={excluirUsuario}
+            onSubmit={(e) => {
+              if (!confirm(d.admin.usuarios.confirmarExcluir)) e.preventDefault();
             }}
-            className="rounded px-2 py-1 font-medium text-slate-600 hover:bg-slate-100"
           >
-            {d.admin.usuarios.redefinirSenha}
-          </button>
+            <input type="hidden" name="id" value={usuario.id} />
+            <button className="rounded px-2 py-1 font-medium text-red-600 hover:bg-red-50">
+              {d.admin.usuarios.excluir}
+            </button>
+          </form>
         </div>
       </div>
+
+      {/* Link de acesso pendente: é assim que a pessoa entra quando o email não sai. */}
+      {usuario.linkConvite && (
+        <div className={`mt-3 rounded-md border p-3 ${destacarLink ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-slate-50"}`}>
+          <p className="mb-1 text-xs font-medium text-slate-600">{d.admin.usuarios.linkAcesso}</p>
+          <CopiarLink link={usuario.linkConvite} rotulo={d.admin.usuarios.copiarLink} rotuloCopiado={d.admin.usuarios.copiado} />
+        </div>
+      )}
 
       {editando && (
         <form action={atualizarUsuario} className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -135,16 +167,6 @@ export function UsuarioItem({
               {d.admin.usuarios.salvar}
             </button>
           </div>
-        </form>
-      )}
-
-      {resetando && (
-        <form action={redefinirSenha} className="mt-3 space-y-2">
-          <input type="hidden" name="id" value={usuario.id} />
-          <SenhaGerada name="novaSenha" />
-          <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-            {d.admin.usuarios.redefinirAvisar}
-          </button>
         </form>
       )}
     </div>

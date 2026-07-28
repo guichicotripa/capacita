@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { criarUsuario } from "@/lib/actions";
 import { useDict } from "./I18nProvider";
-import { SenhaGerada } from "./SenhaGerada";
 
 type Cliente = { id: number; nome: string };
 
@@ -69,7 +68,7 @@ export function FormNovoUsuario({ clientes, full = true }: { clientes: Cliente[]
           </div>
         </div>
       )}
-      <SenhaGerada name="senhaInicial" />
+      {/* Sem campo de senha: a pessoa define a dela pelo link de acesso. */}
       <div className="flex gap-2">
         <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
           {d.admin.usuarios.criarEnviar}

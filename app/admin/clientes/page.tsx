@@ -5,6 +5,7 @@ import { getUsuarioAtual } from "@/lib/auth";
 import { ehFullAdmin } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 import { FormNovoCliente } from "@/components/FormNovoCliente";
+import { BotaoExcluirCliente } from "@/components/BotaoExcluirCliente";
 
 export default async function ClientesPage({
   searchParams,
@@ -48,17 +49,34 @@ export default async function ClientesPage({
           {d.admin.clientes.erroExiste}
         </p>
       )}
+      {erro === "temVinculo" && (
+        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {d.admin.clientes.erroTemVinculo}
+        </p>
+      )}
+      {ok === "excluido" && (
+        <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          {d.admin.clientes.excluidoOk}
+        </p>
+      )}
       <div className="grid gap-4">
         {clientes.map((c) => {
           const totalAtrib = c.usuarios.flatMap((u) => u.atribuicoes);
           const concluidos = totalAtrib.filter((a) => statusDe(a) === "concluido").length;
           return (
             <div key={c.id} className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <h2 className="font-medium">{c.nome}</h2>
-                <span className="text-sm text-slate-500">
-                  {d.admin.clientes.resumo(c.usuarios.length, concluidos, totalAtrib.length)}
-                </span>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="text-sm text-slate-500">
+                    {d.admin.clientes.resumo(c.usuarios.length, concluidos, totalAtrib.length)}
+                  </span>
+                  <BotaoExcluirCliente
+                    id={c.id}
+                    rotulo={d.admin.clientes.excluir}
+                    confirmacao={d.admin.clientes.confirmarExcluir}
+                  />
+                </div>
               </div>
               {/* Cadastro da empresa: só mostra o que estiver preenchido. */}
               {[c.cnpj, c.responsavel, c.telefone, c.email, c.endereco].some(Boolean) && (

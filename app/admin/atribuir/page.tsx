@@ -22,9 +22,10 @@ export default async function AtribuirPage({
       orderBy: { titulo: "asc" },
     }),
     // Inclui admins, não só alunos: o admin de cliente também faz os cursos e
-    // precisa aparecer aqui (inclusive para se auto atribuir).
+    // precisa aparecer aqui (inclusive para se auto atribuir). Desativados ficam
+    // de fora — não conseguem entrar para fazer o treinamento.
     prisma.usuario.findMany({
-      where: escopo === null ? {} : { clienteId: escopo },
+      where: escopo === null ? { ativo: true } : { ativo: true, clienteId: escopo },
       include: { cliente: true },
       orderBy: { nome: "asc" },
     }),

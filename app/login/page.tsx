@@ -1,6 +1,7 @@
 import { login } from "@/lib/actions";
 import { getDict } from "@/lib/i18n-server";
 import { SeletorIdioma } from "@/components/SeletorIdioma";
+import { versaoApp } from "@/lib/versao";
 
 export default async function LoginPage({
   searchParams,
@@ -28,7 +29,11 @@ export default async function LoginPage({
 
         {erro && (
           <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-            {erro === "bloqueado" ? d.login.bloqueado : d.login.erro}
+            {erro === "bloqueado"
+              ? d.login.bloqueado
+              : erro === "inativo"
+                ? d.login.inativo
+                : d.login.erro}
           </p>
         )}
 
@@ -58,6 +63,9 @@ export default async function LoginPage({
             {d.login.entrar}
           </button>
         </form>
+
+        {/* Versão publicada: serve para conferir se o deploy chegou ao ar. */}
+        <p className="mt-6 text-center font-mono text-xs text-slate-300">{versaoApp()}</p>
       </div>
     </main>
   );

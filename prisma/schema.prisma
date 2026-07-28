@@ -35,6 +35,11 @@ model Usuario {
   papel       String // "admin" | "aluno"
   telefone    String? // contato do usuario
   cargo       String? // cargo/funcao na empresa
+  ativo       Boolean  @default(true) // desativado = nao loga e some das listas
+  // Convite de primeiro acesso: a pessoa define a propria senha pelo link, em vez
+  // de o admin repassar uma senha gerada (que se perdia quando o email nao saia).
+  conviteToken    String?   @unique
+  conviteExpiraEm DateTime?
   clienteId   Int?
   cliente     Cliente?     @relation(fields: [clienteId], references: [id])
   atribuicoes Atribuicao[]

@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./db";
 import { verificarSenha, hashSenha } from "./password";
-import { validarPolitica } from "./password-policy";
+import { validarPolitica, gerarSenhaForte } from "./password-policy";
+import {
+  gerarTokenConvite,
+  expiracaoConvite,
+  linkConvite,
+  conviteValido,
+} from "./convite";
 import {
   ehFullAdmin,
   escopoCliente,
@@ -98,6 +104,9 @@ export async function login(formData: FormData) {
     }
     redirect("/login?erro=1");
   }
+
+  // Conta desativada pelo admin: credencial correta, mas sem acesso.
+  if (!usuario!.ativo) redirect("/login?erro=inativo");
 
   // Sucesso: zera o contador de falhas e qualquer bloqueio.
   if (usuario!.falhasLogin !== 0 || usuario!.bloqueadoAte) {
@@ -707,34 +716,173 @@ export async function criarUsuario(formData: FormData) {
   const senhaInicial = String(formData.get("senhaInicial") || "").trim();
 
   // A senha vem gerada pelo cliente; validamos a política no servidor por segurança.
-  if (!nome || !email || validarPolitica(senhaInicial)) {
+  if (!nome || !email) {
     redirect("/admin/usuarios?erro=dados");
   }
   const existe = await prisma.usuario.findUnique({ where: { email } });
   if (existe) redirect("/admin/usuarios?erro=email");
 
-  await prisma.usuario.create({
+  // Acesso por convite: a pessoa define a própria senha pelo link. A senha
+  // gravada aqui é aleatória e ninguém a conhece — serve só para o campo não
+  // ficar vazio até o convite ser usado.
+  const token = gerarTokenConvite();
+  const novo = await prisma.usuario.create({
     data: {
       nome,
       email,
       papel,
       telefone: String(formData.get("telefone") || "").trim() || null,
       cargo: String(formData.get("cargo") || "").trim() || null,
-      senhaHash: hashSenha(senhaInicial),
-      senhaTemporaria: true,
+      senhaHash: hashSenha(gerarSenhaForte(32)),
+      senhaTemporaria: false,
+      conviteToken: token,
+      conviteExpiraEm: expiracaoConvite(),
       clienteId,
     },
   });
 
-  const base = process.env.APP_URL || "https://capacita-rust.vercel.app";
-  await enviarEmail(
+  const enviado = await enviarEmail(
     email,
-    "Bem-vindo à Capacita",
-    `Olá, ${nome}.\n\nVocê foi cadastrado na plataforma de treinamentos Capacita.\n\nAcesse: ${base}/login\nEmail: ${email}\nSenha inicial: ${senhaInicial}\n\nPor segurança, vamos pedir para você trocar a senha no primeiro acesso.`
+    "Seu acesso à Capacita",
+    `Olá, ${nome}.\n\nVocê foi cadastrado na plataforma de treinamentos Capacita.\n\nPara criar sua senha e acessar, abra o link abaixo:\n${linkConvite(token)}\n\nO link vale por 7 dias e só pode ser usado uma vez.`
   );
 
   revalidatePath("/admin/usuarios");
-  redirect("/admin/usuarios?ok=criado");
+  // Se o email não saiu, leva o admin direto para o link, para ele copiar e
+  // mandar pela mão. É o que impede o usuário de nascer inacessível.
+  redirect(`/admin/usuarios?ok=${enviado ? "criado" : "criadoSemEmail"}&convite=${novo.id}`);
+}
+
+// A pessoa define a própria senha pelo link de convite e já entra.
+export async function definirSenhaPorConvite(formData: FormData) {
+  const token = String(formData.get("token") || "");
+  const nova = String(formData.get("novaSenha") || "").trim();
+  const confirmar = String(formData.get("confirmar") || "").trim();
+
+  const alvo = token
+    ? await prisma.usuario.findUnique({ where: { conviteToken: token } })
+    : null;
+  if (!alvo || !alvo.ativo || !conviteValido(alvo)) redirect("/convite/invalido");
+
+  const violacao = validarPolitica(nova);
+  if (violacao) redirect(`/convite/${token}?erro=${violacao}`);
+  if (nova !== confirmar) redirect(`/convite/${token}?erro=confirma`);
+
+  await prisma.usuario.update({
+    where: { id: alvo!.id },
+    data: {
+      senhaHash: hashSenha(nova),
+      senhaTemporaria: false,
+      // Consome o convite (uso único) e limpa qualquer bloqueio de tentativas.
+      conviteToken: null,
+      conviteExpiraEm: null,
+      falhasLogin: 0,
+      bloqueadoAte: null,
+    },
+  });
+
+  await criarSessao(alvo!.id);
+  redirect(alvo!.papel === "admin" ? "/admin" : "/aluno");
+}
+
+// Admin gera um novo link de acesso (primeiro acesso ou senha esquecida).
+// Substitui a antiga "redefinir senha", que dependia de repassar senha.
+export async function gerarNovoConvite(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const id = Number(formData.get("id"));
+  const escopo = escopoCliente(usuario);
+  const alvo = await prisma.usuario.findUnique({ where: { id } });
+  if (!alvo) redirect("/admin/usuarios");
+  // Admin de cliente só mexe em usuário do próprio cliente.
+  if (escopo !== null && alvo!.clienteId !== escopo) redirect("/admin/usuarios");
+
+  const token = gerarTokenConvite();
+  await prisma.usuario.update({
+    where: { id },
+    data: {
+      conviteToken: token,
+      conviteExpiraEm: expiracaoConvite(),
+      // Um link novo também destrava quem ficou bloqueado por tentativas.
+      falhasLogin: 0,
+      bloqueadoAte: null,
+    },
+  });
+
+  const enviado = await enviarEmail(
+    alvo!.email,
+    "Seu novo acesso à Capacita",
+    `Olá, ${alvo!.nome}.\n\nPara criar uma nova senha e acessar, abra o link abaixo:\n${linkConvite(token)}\n\nO link vale por 7 dias e só pode ser usado uma vez.`
+  );
+
+  revalidatePath("/admin/usuarios");
+  redirect(`/admin/usuarios?ok=${enviado ? "convite" : "conviteSemEmail"}&convite=${id}`);
+}
+
+// Ativa/desativa um usuário. Desativado não loga e some das listas de
+// atribuição, mas o histórico dele continua no relatório (prova de compliance).
+export async function alternarAtivoUsuario(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const id = Number(formData.get("id"));
+  if (id === usuario!.id) redirect("/admin/usuarios?erro=proprioUsuario");
+
+  const escopo = escopoCliente(usuario);
+  const alvo = await prisma.usuario.findUnique({ where: { id } });
+  if (!alvo) redirect("/admin/usuarios");
+  if (escopo !== null && alvo!.clienteId !== escopo) redirect("/admin/usuarios");
+
+  await prisma.usuario.update({
+    where: { id },
+    data: { ativo: !alvo!.ativo, conviteToken: null, conviteExpiraEm: null },
+  });
+
+  revalidatePath("/admin/usuarios");
+  redirect(`/admin/usuarios?ok=${alvo!.ativo ? "desativado" : "reativado"}`);
+}
+
+// Exclui de vez um usuário — só se ele não tiver histórico de treinamento.
+// Com histórico, o certo é desativar: apagar destruiria a prova de conclusão,
+// que é justamente o que o comprador exige numa auditoria.
+export async function excluirUsuario(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const id = Number(formData.get("id"));
+  if (id === usuario!.id) redirect("/admin/usuarios?erro=proprioUsuario");
+
+  const escopo = escopoCliente(usuario);
+  const alvo = await prisma.usuario.findUnique({ where: { id } });
+  if (!alvo) redirect("/admin/usuarios");
+  if (escopo !== null && alvo!.clienteId !== escopo) redirect("/admin/usuarios");
+
+  const historico = await prisma.atribuicao.count({ where: { usuarioId: id } });
+  if (historico > 0) redirect("/admin/usuarios?erro=temHistorico");
+
+  await prisma.usuario.delete({ where: { id } });
+
+  revalidatePath("/admin/usuarios");
+  redirect("/admin/usuarios?ok=excluido");
+}
+
+// Admin geral exclui uma empresa-cliente, desde que nada esteja preso a ela.
+export async function excluirCliente(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || !ehFullAdmin(usuario)) redirect("/admin");
+
+  const id = Number(formData.get("id"));
+  const [usuarios, treinamentos] = await Promise.all([
+    prisma.usuario.count({ where: { clienteId: id } }),
+    prisma.treinamento.count({ where: { clienteId: id } }),
+  ]);
+  if (usuarios > 0 || treinamentos > 0) redirect("/admin/clientes?erro=temVinculo");
+
+  await prisma.cliente.delete({ where: { id } });
+
+  revalidatePath("/admin/clientes");
+  redirect("/admin/clientes?ok=excluido");
 }
 
 // Admin edita nome, email, papel e cliente de um usuário.
@@ -781,35 +929,5 @@ export async function atualizarUsuario(formData: FormData) {
   redirect("/admin/usuarios?ok=editado");
 }
 
-// Admin redefine a senha de um usuário (define nova + força troca no 1º acesso)
-// e avisa por email.
-export async function redefinirSenha(formData: FormData) {
-  const usuario = await getUsuarioAtual();
-  if (!usuario || usuario.papel !== "admin") redirect("/login");
-
-  const id = Number(formData.get("id"));
-  const novaSenha = String(formData.get("novaSenha") || "").trim();
-  if (validarPolitica(novaSenha)) redirect("/admin/usuarios?erro=curta");
-
-  // Admin de cliente só redefine senha de usuários do próprio cliente.
-  const escopo = escopoCliente(usuario);
-  if (escopo !== null) {
-    const alvoAtual = await prisma.usuario.findUnique({ where: { id } });
-    if (!alvoAtual || alvoAtual.clienteId !== escopo) redirect("/admin/usuarios");
-  }
-
-  const alvo = await prisma.usuario.update({
-    where: { id },
-    data: { senhaHash: hashSenha(novaSenha), senhaTemporaria: true },
-  });
-
-  const base = process.env.APP_URL || "https://capacita-rust.vercel.app";
-  await enviarEmail(
-    alvo.email,
-    "Capacita — sua senha foi redefinida",
-    `Olá, ${alvo.nome}.\n\nUm administrador redefiniu sua senha.\n\nAcesse: ${base}/login\nEmail: ${alvo.email}\nSenha temporária: ${novaSenha}\n\nVamos pedir para você trocar a senha no primeiro acesso.`
-  );
-
-  revalidatePath("/admin/usuarios");
-  redirect("/admin/usuarios?ok=senha");
-}
+// A antiga redefinirSenha foi substituída por gerarNovoConvite: o admin não
+// repassa mais senha nenhuma, ele manda um link e a pessoa define a própria.
