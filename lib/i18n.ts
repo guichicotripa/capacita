@@ -329,11 +329,11 @@ const pt = {
       nenhum: "Nenhum usuário.",
       okCriado: "Usuário criado. Enviamos o link de acesso por email.",
       okCriadoSemEmail:
-        "Usuário criado, mas o email NÃO foi enviado (envio não configurado). Copie o link de acesso abaixo e mande para a pessoa.",
+        "Usuário criado, mas o email NÃO chegou a ser enviado. Copie o link de acesso abaixo e mande para a pessoa.",
       okEditado: "Usuário atualizado.",
       okConvite: "Novo link de acesso enviado por email.",
       okConviteSemEmail:
-        "Link de acesso gerado, mas o email NÃO foi enviado (envio não configurado). Copie o link abaixo.",
+        "Link de acesso gerado, mas o email NÃO chegou a ser enviado. Copie o link abaixo.",
       okDesativado: "Usuário desativado. Ele não consegue mais entrar.",
       okReativado: "Usuário reativado.",
       okExcluido: "Usuário excluído.",
@@ -723,10 +723,10 @@ const es: Dict = {
       nenhum: "Ningún usuario.",
       okCriado: "Usuario creado. Enviamos el enlace de acceso por correo.",
       okCriadoSemEmail:
-        "Usuario creado, pero el correo NO fue enviado (envío no configurado). Copia el enlace de acceso abajo y envíaselo a la persona.",
+        "Usuario creado, pero el correo NO llegó a enviarse. Copia el enlace de acceso abajo y envíaselo a la persona.",
       okConvite: "Nuevo enlace de acceso enviado por correo.",
       okConviteSemEmail:
-        "Enlace de acceso generado, pero el correo NO fue enviado (envío no configurado). Copia el enlace abajo.",
+        "Enlace de acceso generado, pero el correo NO llegó a enviarse. Copia el enlace abajo.",
       okDesativado: "Usuario desactivado. Ya no puede entrar.",
       okReativado: "Usuario reactivado.",
       okExcluido: "Usuario eliminado.",
