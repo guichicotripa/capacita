@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { getUsuarioAtual } from "@/lib/auth";
@@ -26,7 +27,15 @@ export default async function ContaPage({
     <>
       <Header nome={u.nome} papel={u.papel} />
       <main className="mx-auto w-full max-w-xl flex-1 px-4 py-8">
-        <h1 className="text-xl font-semibold">{d.conta.titulo}</h1>
+        {/* Esta página não tem o menu (o Header aqui vai sem links), então sem
+            este voltar a pessoa fica presa: só saía clicando no logo. */}
+        <Link
+          href={u.papel === "admin" ? "/admin" : "/aluno"}
+          className="text-sm text-slate-500 hover:underline"
+        >
+          ← {d.comum.voltar}
+        </Link>
+        <h1 className="mt-3 text-xl font-semibold">{d.conta.titulo}</h1>
         <p className="mb-6 text-sm text-slate-500">
           {u.nome} · {u.email}
         </p>

@@ -9,6 +9,7 @@ const pt = {
     sair: "Sair",
     salvar: "Salvar",
     cancelar: "Cancelar",
+    voltar: "Voltar",
   },
   idioma: { rotulo: "Idioma", pt: "PT", es: "ES" },
   login: {
@@ -403,6 +404,7 @@ const es: Dict = {
     sair: "Salir",
     salvar: "Guardar",
     cancelar: "Cancelar",
+    voltar: "Volver",
   },
   idioma: { rotulo: "Idioma", pt: "PT", es: "ES" },
   login: {

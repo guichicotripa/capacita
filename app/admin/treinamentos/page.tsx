@@ -53,7 +53,9 @@ export default async function TreinamentosPage({
       )}
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <table className="w-full text-sm">
+        {/* No celular a tabela não cabe: rola na horizontal em vez de ser cortada. */}
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[36rem] text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs font-medium text-slate-500">
               <th className="px-4 py-2.5">{d.admin.treinos.colNome}</th>
@@ -130,6 +132,7 @@ export default async function TreinamentosPage({
             ))}
           </tbody>
         </table>
+        </div>
         {treinamentos.length === 0 && (
           <p className="px-4 py-6 text-sm text-slate-400">{d.admin.treinos.nenhum}</p>
         )}

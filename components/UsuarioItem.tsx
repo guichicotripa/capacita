@@ -43,8 +43,10 @@ export function UsuarioItem({
 
   return (
     <div className={`px-4 py-3 ${usuario.ativo ? "" : "bg-slate-50"}`}>
-      <div className="flex items-center justify-between gap-3">
-        <div className={usuario.ativo ? "" : "opacity-60"}>
+      {/* No celular empilha: nome em cima, ações embaixo. Lado a lado, os quatro
+          botões não cabiam em 375px e ficavam cortados fora da tela. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className={`min-w-0 ${usuario.ativo ? "" : "opacity-60"}`}>
           <p className="font-medium text-slate-800">
             {usuario.nome}
             <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-500">
@@ -56,7 +58,7 @@ export function UsuarioItem({
               </span>
             )}
           </p>
-          <p className="text-sm text-slate-500">
+          <p className="break-words text-sm text-slate-500">
             {usuario.email} · {usuario.clienteNome ?? d.admin.usuarios.semCliente}
           </p>
           {(usuario.cargo || usuario.telefone) && (
@@ -65,7 +67,7 @@ export function UsuarioItem({
             </p>
           )}
         </div>
-        <div className="flex shrink-0 flex-wrap justify-end gap-1 text-xs">
+        <div className="flex flex-wrap gap-1 text-xs sm:shrink-0 sm:justify-end">
           <button
             onClick={() => setEditando((v) => !v)}
             className="rounded px-2 py-1 font-medium text-slate-600 hover:bg-slate-100"

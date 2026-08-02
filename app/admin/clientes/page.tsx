@@ -65,9 +65,10 @@ export default async function ClientesPage({
           const concluidos = totalAtrib.filter((a) => statusDe(a) === "concluido").length;
           return (
             <div key={c.id} className="rounded-lg border border-slate-200 bg-white p-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-medium">{c.nome}</h2>
-                <div className="flex shrink-0 items-center gap-3">
+              {/* No celular empilha: o resumo + botão excluir não cabem ao lado do nome. */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <h2 className="min-w-0 break-words font-medium">{c.nome}</h2>
+                <div className="flex items-center gap-3 sm:shrink-0">
                   <span className="text-sm text-slate-500">
                     {d.admin.clientes.resumo(c.usuarios.length, concluidos, totalAtrib.length)}
                   </span>
