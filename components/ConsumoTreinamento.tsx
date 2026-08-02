@@ -76,6 +76,40 @@ export async function ConsumoTreinamento({
       <p className="mt-1 text-sm text-slate-500">{t.descricao}</p>
       <p className="mt-1 text-xs text-slate-400">{d.treino.prazo}: {formatarData(atrib.prazo)}</p>
 
+      {/* Resultado e status ficam ANTES do conteúdo. Embaixo do visualizador eles
+          caíam fora da tela no celular: a página recarrega no topo depois do envio
+          e a pessoa via o deck de novo, achando que a nota não tinha saído. */}
+      {nota !== undefined && (
+        <div
+          className={`mt-4 rounded-lg border p-4 text-sm ${
+            aprovado === "1"
+              ? "border-green-200 bg-green-50 text-green-800"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          {aprovado === "1"
+            ? d.treino.aprovadoCom(Number(nota))
+            : d.treino.vocefez(Number(nota), t.notaMinima)}
+        </div>
+      )}
+
+      {status === "concluido" ? (
+        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4 text-sm text-green-700">
+          {d.treino.concluidoEm(formatarData(atrib.concluidoEm!))}
+          {atrib.nota !== null && d.treino.nota(atrib.nota)}
+        </div>
+      ) : (
+        /* Diz de saída o que a pessoa precisa fazer no fim do conteúdo. */
+        <p className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
+          {temQuiz ? d.treino.passoAvaliacao(t.perguntas.length) : d.treino.passoConcluir}
+          {!quizNoDeck && (
+            <a href="#fim" className="ml-2 font-medium text-slate-700 hover:underline">
+              {d.treino.irParaFinal}
+            </a>
+          )}
+        </p>
+      )}
+
       <div className="mt-6">
         {t.tipo === "arquivo" && t.arquivo ? (
           <VisualizadorArquivo treinamentoId={t.id} mime={t.arquivo.mime} quiz={quizData} />
@@ -99,20 +133,7 @@ export async function ConsumoTreinamento({
         )}
       </div>
 
-      {/* Resultado da última tentativa, se acabou de enviar */}
-      {nota !== undefined && (
-        <div
-          className={`mt-6 rounded-lg border p-4 text-sm ${
-            aprovado === "1"
-              ? "border-green-200 bg-green-50 text-green-800"
-              : "border-red-200 bg-red-50 text-red-800"
-          }`}
-        >
-          {aprovado === "1"
-            ? d.treino.aprovadoCom(Number(nota))
-            : d.treino.vocefez(Number(nota), t.notaMinima)}
-        </div>
-      )}
+      <span id="fim" />
 
       {/* Revisão da avaliação: mostra o que foi marcado, o que errou e a resposta certa. */}
       {temQuiz && atrib.ultimasRespostas && (
@@ -152,13 +173,9 @@ export async function ConsumoTreinamento({
         </div>
       )}
 
-      {/* Conclusão. Em deck (slides/PDF) o quiz já está na última página. */}
-      {status === "concluido" ? (
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 text-sm text-green-700">
-          {d.treino.concluidoEm(formatarData(atrib.concluidoEm!))}
-          {atrib.nota !== null && d.treino.nota(atrib.nota)}
-        </div>
-      ) : quizNoDeck ? null : temQuiz ? (
+      {/* Conclusão. Em deck (slides/PDF) o quiz já está na última página; o estado
+          "concluído" agora é mostrado lá em cima, junto do título. */}
+      {status === "concluido" ? null : quizNoDeck ? null : temQuiz ? (
         <form
           action={submeterQuiz}
           className="mt-6 space-y-5 rounded-lg border border-slate-200 bg-white p-6"

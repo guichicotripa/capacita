@@ -82,9 +82,15 @@ export default async function TreinamentosPage({
                     {t.geradoPorIa && (
                       <span className="rounded bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700">IA</span>
                     )}
-                    {t._count.perguntas > 0 && (
+                    {/* Sem este aviso não dava para notar que um treino ficou sem
+                        avaliação: o aluno via o conteúdo e só marcava concluído. */}
+                    {t._count.perguntas > 0 ? (
                       <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
                         {d.admin.treinos.quiz(t._count.perguntas)}
+                      </span>
+                    ) : (
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">
+                        {d.admin.treinos.semAvaliacao}
                       </span>
                     )}
                   </div>

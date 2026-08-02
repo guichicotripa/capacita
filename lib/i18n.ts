@@ -87,6 +87,10 @@ const pt = {
     revisao: "Revisão da avaliação",
     revisaoLegenda: "Em verde a resposta certa; em vermelho o que você marcou errado.",
     suaResposta: "(sua resposta)",
+    passoAvaliacao: (n: number) =>
+      `Ao final do conteúdo há uma avaliação de ${n} ${n === 1 ? "pergunta" : "perguntas"}.`,
+    passoConcluir: "Ao final do conteúdo, role a página para marcar como concluído.",
+    irParaFinal: "Ir para o final ↓",
   },
   report: {
     titulo: "Relatório de conclusão",
@@ -192,6 +196,7 @@ const pt = {
       tipoApresentacao: "Apresentação",
       tipoTexto: "Texto",
       quiz: (n: number) => `Quiz · ${n}`,
+      semAvaliacao: "Sem avaliação",
       clientePrefixo: (nome: string) => `Cliente: ${nome}`,
       global: "Global (todos os clientes)",
       atribuicoes: (n: number) => `${n} atribuição(ões)`,
@@ -482,6 +487,10 @@ const es: Dict = {
     revisao: "Revisión de la evaluación",
     revisaoLegenda: "En verde la respuesta correcta; en rojo lo que marcaste mal.",
     suaResposta: "(tu respuesta)",
+    passoAvaliacao: (n: number) =>
+      `Al final del contenido hay una evaluación de ${n} ${n === 1 ? "pregunta" : "preguntas"}.`,
+    passoConcluir: "Al final del contenido, desplázate para marcar como completado.",
+    irParaFinal: "Ir al final ↓",
   },
   report: {
     titulo: "Informe de finalización",
@@ -587,6 +596,7 @@ const es: Dict = {
       tipoApresentacao: "Presentación",
       tipoTexto: "Texto",
       quiz: (n: number) => `Cuestionario · ${n}`,
+      semAvaliacao: "Sin evaluación",
       clientePrefixo: (nome: string) => `Cliente: ${nome}`,
       global: "Global (todos los clientes)",
       atribuicoes: (n: number) => `${n} asignación(es)`,
