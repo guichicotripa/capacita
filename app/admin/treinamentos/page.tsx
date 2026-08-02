@@ -20,7 +20,15 @@ export default async function TreinamentosPage({
     where: escopo === null ? {} : { OR: [{ clienteId: escopo }, { clienteId: null }] },
     include: {
       cliente: true,
-      _count: { select: { atribuicoes: true, perguntas: true } },
+      _count: {
+        select: {
+          // A contagem também respeita o escopo. Sem este filtro, um treino
+          // global mostrava para o admin de cliente o total de atribuições de
+          // TODAS as empresas — vazamento de dado entre clientes.
+          atribuicoes: escopo === null ? true : { where: { usuario: { clienteId: escopo } } },
+          perguntas: true,
+        },
+      },
     },
     orderBy: { criadoEm: "desc" },
   });
