@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PaginaQuiz } from "./PaginaQuiz";
 import { useDict } from "./I18nProvider";
+import { salvarProgresso } from "@/lib/actions";
 
 type Quiz = {
   atribuicaoId: number;
@@ -16,27 +17,50 @@ export function VisualizadorArquivo({
   treinamentoId,
   mime,
   quiz,
+  atribuicaoId,
+  progressoInicial = 1,
 }: {
   treinamentoId: number;
   mime: string;
   quiz?: Quiz | null;
+  atribuicaoId?: number;
+  progressoInicial?: number;
 }) {
   return mime === "application/pdf" ? (
-    <VisualizadorPdf treinamentoId={treinamentoId} quiz={quiz} />
+    <VisualizadorPdf
+      treinamentoId={treinamentoId}
+      quiz={quiz}
+      atribuicaoId={atribuicaoId}
+      progressoInicial={progressoInicial}
+    />
   ) : (
     <VisualizadorPptx treinamentoId={treinamentoId} />
   );
 }
 
 // --- PDF: renderiza cada página num canvas com pdf.js ---
-function VisualizadorPdf({ treinamentoId, quiz }: { treinamentoId: number; quiz?: Quiz | null }) {
+function VisualizadorPdf({
+  treinamentoId,
+  quiz,
+  atribuicaoId,
+  progressoInicial = 1,
+}: {
+  treinamentoId: number;
+  quiz?: Quiz | null;
+  atribuicaoId?: number;
+  progressoInicial?: number;
+}) {
   const d = useDict();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfRef = useRef<any>(null);
   const [total, setTotal] = useState(0);
-  const [pag, setPag] = useState(1);
-  const [visitados, setVisitados] = useState<Set<number>>(() => new Set([1]));
+  // Retoma de onde parou; tudo até ali já conta como visto.
+  const inicio = Math.max(1, progressoInicial);
+  const [pag, setPag] = useState(inicio);
+  const [visitados, setVisitados] = useState<Set<number>>(
+    () => new Set(Array.from({ length: inicio }, (_, i) => i + 1))
+  );
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -46,6 +70,14 @@ function VisualizadorPdf({ treinamentoId, quiz }: { treinamentoId: number; quiz?
       setVisitados((v) => (v.has(pag) ? v : new Set(v).add(pag)));
     }
   }, [pag, total]);
+
+  // Persiste a posição, só avançando o marcador.
+  const maisLonge = useRef(inicio);
+  useEffect(() => {
+    if (!atribuicaoId || pag <= maisLonge.current) return;
+    maisLonge.current = pag;
+    salvarProgresso(atribuicaoId, pag).catch(() => {});
+  }, [pag, atribuicaoId]);
 
   // Carrega o documento uma vez.
   useEffect(() => {

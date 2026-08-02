@@ -80,7 +80,10 @@ com contexto e um exemplo concreto do dia a dia. Cada parágrafo com 2 a 4 frase
     : `Gere de 5 a 7 slides, cada um com um título e 3 a 5 tópicos curtos (bullets), um por linha.`
 }
 O primeiro slide é uma introdução ao tema; o último, um resumo do que fazer na prática.
-Gere exatamente 4 perguntas, cada uma com 4 alternativas e EXATAMENTE uma correta.
+Gere exatamente 12 perguntas, cada uma com 4 alternativas e EXATAMENTE uma correta.
+São um BANCO: cada tentativa do aluno sorteia só algumas delas. Por isso não repita
+a mesma ideia em duas perguntas e cubra todos os slides, para que qualquer sorteio
+avalie o conteúdo inteiro.
 Tudo em português do Brasil.`;
 
 // Remove cercas de markdown (```json ... ```) que o modelo às vezes inclui.

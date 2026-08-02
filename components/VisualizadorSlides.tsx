@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PaginaQuiz } from "./PaginaQuiz";
 import { useDict } from "./I18nProvider";
+import { salvarProgresso } from "@/lib/actions";
 
 type Slide = { titulo: string; conteudo: string };
 type Quiz = {
@@ -17,14 +18,24 @@ export function VisualizadorSlides({
   slides,
   quiz,
   formato = "topicos",
+  atribuicaoId,
+  progressoInicial = 1,
 }: {
   slides: Slide[];
   quiz?: Quiz | null;
   formato?: string;
+  atribuicaoId?: number;
+  progressoInicial?: number;
 }) {
   const d = useDict();
-  const [idx, setIdx] = useState(0);
-  const [visitados, setVisitados] = useState<Set<number>>(() => new Set([0]));
+  // Retoma de onde parou. Sem isto o progresso morria ao fechar a aba e a
+  // pessoa tinha que passar o deck inteiro de novo para destravar a avaliação.
+  const inicio = Math.min(Math.max(0, progressoInicial - 1), Math.max(0, slides.length - 1));
+  const [idx, setIdx] = useState(inicio);
+  // Tudo até onde já chegou conta como visto: foi visto numa sessão anterior.
+  const [visitados, setVisitados] = useState<Set<number>>(
+    () => new Set(Array.from({ length: inicio + 1 }, (_, i) => i))
+  );
 
   // Marca os slides já vistos (para liberar a avaliação só depois de ver tudo).
   useEffect(() => {
@@ -32,6 +43,15 @@ export function VisualizadorSlides({
       setVisitados((v) => (v.has(idx) ? v : new Set(v).add(idx)));
     }
   }, [idx, slides.length]);
+
+  // Persiste a posição. Só avança o marcador: voltar um slide para reler não
+  // deve fazer a pessoa perder o ponto mais longe a que já chegou.
+  const maisLonge = useRef(inicio + 1);
+  useEffect(() => {
+    if (!atribuicaoId || idx + 1 <= maisLonge.current) return;
+    maisLonge.current = idx + 1;
+    salvarProgresso(atribuicaoId, idx + 1).catch(() => {});
+  }, [idx, atribuicaoId]);
 
   if (slides.length === 0) return null;
 

@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { VisualizadorSlides } from "@/components/VisualizadorSlides";
 import { VisualizadorArquivo } from "@/components/VisualizadorArquivo";
 import { concluir, submeterQuiz } from "@/lib/actions";
+import { perguntasDaTentativa } from "@/lib/quiz";
 import { getDict } from "@/lib/i18n-server";
 
 // Consumo de um treinamento atribuído (slides/arquivo/vídeo/texto + quiz + revisão).
@@ -48,6 +49,21 @@ export async function ConsumoTreinamento({
   const t = atrib.treinamento;
   const temQuiz = t.perguntas.length > 0;
 
+  // Perguntas desta tentativa: um sorteio do banco. Reprovou, sobe a tentativa
+  // e cai outro conjunto — em vez de repetir as mesmas perguntas de sempre.
+  const perguntasDaVez = temQuiz
+    ? perguntasDaTentativa(t.perguntas, t.perguntasPorTentativa, atrib.id, atrib.tentativas)
+    : [];
+
+  // Revisão da última tentativa. O gabarito só aparece para quem JÁ passou:
+  // mostrar a resposta certa a quem reprovou entrega a prova de graça e a
+  // próxima tentativa vira decoreba, não aprendizado.
+  const respondidas = (atrib.ultimasRespostas as Record<string, number> | null) ?? null;
+  const perguntasRevisao = respondidas
+    ? t.perguntas.filter((p) => respondidas[p.id] !== undefined)
+    : [];
+  const revelarGabarito = status === "concluido";
+
   // O quiz vira a última página do deck quando o conteúdo é deck (slides ou PDF).
   const ehPdf = t.tipo === "arquivo" && t.arquivo?.mime === "application/pdf";
   const quizNoDeck = temQuiz && status !== "concluido" && (t.tipo === "slides" || ehPdf);
@@ -55,7 +71,7 @@ export async function ConsumoTreinamento({
     ? {
         atribuicaoId: atrib.id,
         notaMinima: t.notaMinima,
-        perguntas: t.perguntas.map((p) => ({
+        perguntas: perguntasDaVez.map((p) => ({
           id: p.id,
           enunciado: p.enunciado,
           alternativas: p.alternativas.map((a) => ({ id: a.id, texto: a.texto })),
@@ -101,7 +117,7 @@ export async function ConsumoTreinamento({
       ) : (
         /* Diz de saída o que a pessoa precisa fazer no fim do conteúdo. */
         <p className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
-          {temQuiz ? d.treino.passoAvaliacao(t.perguntas.length) : d.treino.passoConcluir}
+          {temQuiz ? d.treino.passoAvaliacao(perguntasDaVez.length) : d.treino.passoConcluir}
           {!quizNoDeck && (
             <a href="#fim" className="ml-2 font-medium text-slate-700 hover:underline">
               {d.treino.irParaFinal}
@@ -112,9 +128,21 @@ export async function ConsumoTreinamento({
 
       <div className="mt-6">
         {t.tipo === "arquivo" && t.arquivo ? (
-          <VisualizadorArquivo treinamentoId={t.id} mime={t.arquivo.mime} quiz={quizData} />
+          <VisualizadorArquivo
+            treinamentoId={t.id}
+            mime={t.arquivo.mime}
+            quiz={quizData}
+            atribuicaoId={atrib.id}
+            progressoInicial={atrib.progresso}
+          />
         ) : t.tipo === "slides" ? (
-          <VisualizadorSlides slides={t.slides} quiz={quizData} formato={t.formatoConteudo} />
+          <VisualizadorSlides
+            slides={t.slides}
+            quiz={quizData}
+            formato={t.formatoConteudo}
+            atribuicaoId={atrib.id}
+            progressoInicial={atrib.progresso}
+          />
         ) : t.tipo === "video" && t.conteudoUrl ? (
           <div className="aspect-video w-full overflow-hidden rounded-md border border-slate-200 bg-black">
             <iframe
@@ -135,13 +163,31 @@ export async function ConsumoTreinamento({
 
       <span id="fim" />
 
-      {/* Revisão da avaliação: mostra o que foi marcado, o que errou e a resposta certa. */}
-      {temQuiz && atrib.ultimasRespostas && (
+      {/* Revisão da última tentativa. Aprovado vê o gabarito; reprovado vê só
+          quais errou, sem a resposta certa (senão a próxima tentativa é de graça). */}
+      {perguntasRevisao.length > 0 && (
         <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
           <h2 className="font-semibold">{d.treino.revisao}</h2>
-          <p className="mt-0.5 text-xs text-slate-400">{d.treino.revisaoLegenda}</p>
-          {t.perguntas.map((p, i) => {
-            const escolhida = (atrib.ultimasRespostas as Record<string, number>)[p.id];
+          <p className="mt-0.5 text-xs text-slate-400">
+            {revelarGabarito ? d.treino.revisaoLegenda : d.treino.revisaoSemGabarito}
+          </p>
+          {perguntasRevisao.map((p, i) => {
+            const escolhida = respondidas![p.id];
+            const acertou = p.alternativas.some((a) => a.correta && a.id === escolhida);
+
+            if (!revelarGabarito) {
+              return (
+                <div key={p.id} className="mt-3 flex gap-2 text-sm">
+                  <span className={`w-3 shrink-0 ${acertou ? "text-green-600" : "text-red-600"}`}>
+                    {acertou ? "✓" : "✗"}
+                  </span>
+                  <span className="text-slate-800">
+                    {i + 1}. {p.enunciado}
+                  </span>
+                </div>
+              );
+            }
+
             return (
               <div key={p.id} className="mt-4">
                 <p className="text-sm font-medium text-slate-800">
@@ -182,7 +228,7 @@ export async function ConsumoTreinamento({
         >
           <input type="hidden" name="atribuicaoId" value={atrib.id} />
           <h2 className="font-semibold">{d.treino.avaliacaoMin(t.notaMinima)}</h2>
-          {t.perguntas.map((p, i) => (
+          {perguntasDaVez.map((p, i) => (
             <fieldset key={p.id} className="space-y-2">
               <legend className="text-sm font-medium text-slate-800">
                 {i + 1}. {p.enunciado}

@@ -79,6 +79,9 @@ model Treinamento {
   slides      Slide[] // conteudo em slides quando tipo = slides
   arquivo     Arquivo? // PDF/PPTX original quando tipo = arquivo
   notaMinima  Int          @default(70) // % minimo de acerto para concluir
+  // Quantas perguntas do banco caem em cada tentativa. O banco pode ter 12 e a
+  // prova mostrar 5: quem reprova pega um sorteio diferente na proxima vez.
+  perguntasPorTentativa Int @default(5)
   // Como o conteudo dos slides e apresentado: "topicos" (bullets) ou "prosa"
   // (paragrafos descritivos). Escolhido na geracao por IA.
   formatoConteudo String   @default("topicos")
@@ -144,6 +147,11 @@ model Atribuicao {
   concluidoEm   DateTime?
   nota          Int? // % de acerto na ultima tentativa do quiz (null = sem quiz / nao tentou)
   ultimasRespostas Json? // { perguntaId: alternativaId } da ultima tentativa, p/ revisao
+  // Numero de tentativas ja enviadas. Serve de semente do sorteio de perguntas:
+  // cada tentativa cai num conjunto diferente do banco.
+  tentativas    Int           @default(0)
+  // Ultima pagina/slide visto, para retomar de onde parou (1 = primeira).
+  progresso     Int           @default(1)
   ultimoLembrete DateTime? // ultimo email de lembrete enviado (dedup dos lembretes automaticos)
   notificacoes  Notificacao[]
 

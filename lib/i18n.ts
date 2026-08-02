@@ -86,6 +86,8 @@ const pt = {
     marcarConcluido: "Marcar como concluído",
     revisao: "Revisão da avaliação",
     revisaoLegenda: "Em verde a resposta certa; em vermelho o que você marcou errado.",
+    revisaoSemGabarito:
+      "Estas são as que você errou. A resposta certa não é mostrada: revise o conteúdo e tente de novo. Na próxima tentativa as perguntas serão outras.",
     suaResposta: "(sua resposta)",
     passoAvaliacao: (n: number) =>
       `Ao final do conteúdo há uma avaliação de ${n} ${n === 1 ? "pergunta" : "perguntas"}.`,
@@ -292,6 +294,9 @@ const pt = {
       titulo: (t: string) => `Quiz · ${t}`,
       instrucao: "Preencha as perguntas. Slots em branco são ignorados. Marque a alternativa correta.",
       notaMinima: "Nota mínima para aprovar (%)",
+      porTentativa: "Perguntas por tentativa",
+      porTentativaAjuda:
+        "Preencha um banco maior do que isso. Cada tentativa sorteia perguntas diferentes, então quem reprova não repete a mesma prova.",
       pergunta: (n: number) => `Pergunta ${n}`,
       enunciadoPh: "Enunciado (deixe vazio para ignorar)",
       alternativaPh: (n: number) => `Alternativa ${n}`,
@@ -486,6 +491,8 @@ const es: Dict = {
     marcarConcluido: "Marcar como completado",
     revisao: "Revisión de la evaluación",
     revisaoLegenda: "En verde la respuesta correcta; en rojo lo que marcaste mal.",
+    revisaoSemGabarito:
+      "Estas son las que fallaste. No mostramos la respuesta correcta: repasa el contenido e inténtalo de nuevo. En el próximo intento las preguntas serán otras.",
     suaResposta: "(tu respuesta)",
     passoAvaliacao: (n: number) =>
       `Al final del contenido hay una evaluación de ${n} ${n === 1 ? "pregunta" : "preguntas"}.`,
@@ -692,6 +699,9 @@ const es: Dict = {
       titulo: (t: string) => `Cuestionario · ${t}`,
       instrucao: "Completa las preguntas. Los espacios vacíos se ignoran. Marca la alternativa correcta.",
       notaMinima: "Nota mínima para aprobar (%)",
+      porTentativa: "Preguntas por intento",
+      porTentativaAjuda:
+        "Carga un banco mayor que eso. Cada intento sortea preguntas distintas, así que quien reprueba no repite la misma prueba.",
       pergunta: (n: number) => `Pregunta ${n}`,
       enunciadoPh: "Enunciado (deja vacío para ignorar)",
       alternativaPh: (n: number) => `Alternativa ${n}`,

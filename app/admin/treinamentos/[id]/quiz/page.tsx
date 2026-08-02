@@ -6,7 +6,9 @@ import { getUsuarioAtual } from "@/lib/auth";
 import { podeEditarTreino } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 
-const SLOTS = 6; // número fixo de perguntas editáveis
+// O banco tem 12 slots e a prova mostra só uma parte (perguntasPorTentativa).
+// Quem reprova cai noutro sorteio, então precisa haver folga no banco.
+const SLOTS = 12;
 const ALTS = 4; // alternativas por pergunta
 
 export default async function QuizPage({
@@ -43,17 +45,31 @@ export default async function QuizPage({
         <input type="hidden" name="treinamentoId" value={treinamentoId} />
         <input type="hidden" name="totalPerguntas" value={SLOTS} />
 
-        <label className="flex items-center gap-2 text-sm">
-          <span className="font-medium text-slate-700">{d.admin.quiz.notaMinima}</span>
-          <input
-            name="notaMinima"
-            type="number"
-            min={0}
-            max={100}
-            defaultValue={treinamento.notaMinima}
-            className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm"
-          />
-        </label>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border border-slate-200 bg-white p-4">
+          <label className="flex items-center gap-2 text-sm">
+            <span className="font-medium text-slate-700">{d.admin.quiz.notaMinima}</span>
+            <input
+              name="notaMinima"
+              type="number"
+              min={0}
+              max={100}
+              defaultValue={treinamento.notaMinima}
+              className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <span className="font-medium text-slate-700">{d.admin.quiz.porTentativa}</span>
+            <input
+              name="perguntasPorTentativa"
+              type="number"
+              min={1}
+              max={SLOTS}
+              defaultValue={treinamento.perguntasPorTentativa}
+              className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm"
+            />
+          </label>
+          <p className="w-full text-xs text-slate-400">{d.admin.quiz.porTentativaAjuda}</p>
+        </div>
 
         {Array.from({ length: SLOTS }).map((_, p) => {
           const pergunta = treinamento.perguntas[p];

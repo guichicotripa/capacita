@@ -26,6 +26,7 @@ import {
   getMfaPendente,
 } from "./auth";
 import { statusDe } from "./status";
+import { perguntasDaTentativa } from "./quiz";
 import { notificar, enviarEmail } from "./email";
 import { enviarLembretes } from "./lembretes";
 import { cookies } from "next/headers";
@@ -193,6 +194,22 @@ export async function desativarMfa() {
 
 // Aluno marca um treinamento SEM quiz como concluido (sistema de honra).
 // So vale se a atribuicao e dele e ainda nao venceu (acesso cortado apos o prazo).
+// Guarda em que página/slide a pessoa está, para retomar de onde parou.
+// Chamado pelo visualizador a cada virada de página. É fire-and-forget: se
+// falhar, o pior caso é a pessoa recomeçar do início, então não interrompe
+// a navegação nem devolve erro para a tela.
+export async function salvarProgresso(atribuicaoId: number, pagina: number) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario) return;
+  const pag = Math.max(1, Math.floor(pagina));
+  // updateMany (e não update) para o filtro por usuarioId entrar na query:
+  // ninguém mexe no progresso de outra pessoa.
+  await prisma.atribuicao.updateMany({
+    where: { id: atribuicaoId, usuarioId: usuario.id },
+    data: { progresso: pag },
+  });
+}
+
 export async function concluir(formData: FormData) {
   const usuario = await getUsuarioAtual();
   if (!usuario) redirect("/login");
@@ -248,8 +265,18 @@ export async function submeterQuiz(formData: FormData) {
   if (!atrib || atrib.usuarioId !== usuario!.id) redirect(base);
   if (statusDe(atrib!) === "vencido") redirect(base);
 
-  const perguntas = atrib!.treinamento.perguntas;
-  if (perguntas.length === 0) redirect(`${base}/${atribuicaoId}`);
+  const banco = atrib!.treinamento.perguntas;
+  if (banco.length === 0) redirect(`${base}/${atribuicaoId}`);
+
+  // Corrige contra o MESMO sorteio que a pessoa respondeu. O conjunto vem de
+  // (atribuição, tentativa atual), então é reproduzível aqui sem depender de
+  // nada que tenha chegado pelo formulário.
+  const perguntas = perguntasDaTentativa(
+    banco,
+    atrib!.treinamento.perguntasPorTentativa,
+    atribuicaoId,
+    atrib!.tentativas
+  );
 
   let acertos = 0;
   const respostas: Record<number, number> = {};
@@ -264,7 +291,13 @@ export async function submeterQuiz(formData: FormData) {
 
   await prisma.atribuicao.update({
     where: { id: atribuicaoId },
-    data: { nota, concluidoEm: aprovado ? new Date() : null, ultimasRespostas: respostas },
+    data: {
+      nota,
+      concluidoEm: aprovado ? new Date() : null,
+      ultimasRespostas: respostas,
+      // Sobe a tentativa: quem reprovou cai noutro conjunto na próxima.
+      tentativas: { increment: 1 },
+    },
   });
 
   await notificar({
@@ -355,6 +388,7 @@ export async function salvarQuiz(formData: FormData) {
   const treinoQuiz = await prisma.treinamento.findUnique({ where: { id: treinamentoId } });
   if (!treinoQuiz || !podeEditarTreino(treinoQuiz, usuario)) redirect("/admin/treinamentos");
   const notaMinima = Math.min(100, Math.max(0, Number(formData.get("notaMinima") || 70)));
+  const porTentativa = Math.min(20, Math.max(1, Number(formData.get("perguntasPorTentativa") || 5)));
   const total = Number(formData.get("totalPerguntas") || 0);
 
   // Reconstrói as perguntas a partir dos campos do form.
@@ -383,6 +417,7 @@ export async function salvarQuiz(formData: FormData) {
       where: { id: treinamentoId },
       data: {
         notaMinima,
+        perguntasPorTentativa: porTentativa,
         perguntas: {
           create: perguntas.map((p, i) => ({
             enunciado: p.enunciado,
