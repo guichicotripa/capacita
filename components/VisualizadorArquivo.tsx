@@ -8,6 +8,7 @@ import { salvarProgresso } from "@/lib/actions";
 type Quiz = {
   atribuicaoId: number;
   notaMinima: number;
+  emJanela?: boolean;
   perguntas: { id: number; enunciado: string; alternativas: { id: number; texto: string }[] }[];
 };
 
@@ -63,13 +64,6 @@ function VisualizadorPdf({
   );
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-
-  // Marca as páginas já vistas (libera a avaliação só depois de ver todas).
-  useEffect(() => {
-    if (total > 0 && pag <= total) {
-      setVisitados((v) => (v.has(pag) ? v : new Set(v).add(pag)));
-    }
-  }, [pag, total]);
 
   // Persiste a posição, só avançando o marcador.
   const maisLonge = useRef(inicio);
@@ -133,6 +127,15 @@ function VisualizadorPdf({
   const quizLiberado = !temQuiz || (total > 0 && visitados.size >= total);
   const maxNav = quizLiberado ? totalNav : total;
 
+  const irParaPagina = (n: number) => {
+    const alvo = Math.max(1, Math.min(maxNav, n));
+    setPag(alvo);
+    // Marca a página como vista aqui, na navegação, e não num efeito.
+    if (total > 0 && alvo <= total) {
+      setVisitados((v) => (v.has(alvo) ? v : new Set(v).add(alvo)));
+    }
+  };
+
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       {naQuiz ? (
@@ -140,6 +143,7 @@ function VisualizadorPdf({
           atribuicaoId={quiz!.atribuicaoId}
           notaMinima={quiz!.notaMinima}
           perguntas={quiz!.perguntas}
+          emJanela={quiz!.emJanela}
         />
       ) : (
         <div className="flex min-h-[280px] flex-col items-center justify-center bg-slate-50 p-3">
@@ -157,8 +161,8 @@ function VisualizadorPdf({
         pag={pag}
         total={maxNav}
         rotuloProximo={temQuiz && pag === total && quizLiberado ? d.treino.irAvaliacao : d.treino.proximo}
-        onAnterior={() => setPag((p) => Math.max(1, p - 1))}
-        onProximo={() => setPag((p) => Math.min(maxNav, p + 1))}
+        onAnterior={() => irParaPagina(pag - 1)}
+        onProximo={() => irParaPagina(pag + 1)}
       />
     </div>
   );

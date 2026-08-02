@@ -14,10 +14,12 @@ export function PaginaQuiz({
   atribuicaoId,
   notaMinima,
   perguntas,
+  emJanela = false,
 }: {
   atribuicaoId: number;
   notaMinima: number;
   perguntas: Pergunta[];
+  emJanela?: boolean;
 }) {
   const d = useDict();
   return (
@@ -27,6 +29,7 @@ export function PaginaQuiz({
         {d.treino.respondaConcluir(notaMinima)}
       </h2>
       <input type="hidden" name="atribuicaoId" value={atribuicaoId} />
+      {emJanela && <input type="hidden" name="origem" value="janela" />}
       <div className="mt-5 space-y-5">
         {perguntas.map((p, i) => (
           <fieldset key={p.id} className="space-y-2">

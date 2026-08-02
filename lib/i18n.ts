@@ -93,6 +93,10 @@ const pt = {
       `Ao final do conteúdo há uma avaliação de ${n} ${n === 1 ? "pergunta" : "perguntas"}.`,
     passoConcluir: "Ao final do conteúdo, role a página para marcar como concluído.",
     irParaFinal: "Ir para o final ↓",
+    abrirEmJanela: "⤢ Abrir em outra janela",
+    abertaEmOutraJanela: "Esta capacitação está aberta em outra janela.",
+    trazerParaFrente: "Trazer para frente",
+    fecharJanela: "Fechar janela",
   },
   report: {
     titulo: "Relatório de conclusão",
@@ -498,6 +502,10 @@ const es: Dict = {
       `Al final del contenido hay una evaluación de ${n} ${n === 1 ? "pregunta" : "preguntas"}.`,
     passoConcluir: "Al final del contenido, desplázate para marcar como completado.",
     irParaFinal: "Ir al final ↓",
+    abrirEmJanela: "⤢ Abrir en otra ventana",
+    abertaEmOutraJanela: "Esta capacitación está abierta en otra ventana.",
+    trazerParaFrente: "Traer al frente",
+    fecharJanela: "Cerrar ventana",
   },
   report: {
     titulo: "Informe de finalización",

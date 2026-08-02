@@ -194,6 +194,14 @@ export async function desativarMfa() {
 
 // Aluno marca um treinamento SEM quiz como concluido (sistema de honra).
 // So vale se a atribuicao e dele e ainda nao venceu (acesso cortado apos o prazo).
+// Para onde volta depois de enviar o quiz ou marcar como concluído.
+// A origem vem do formulário, então é tratada como não confiável: só o valor
+// exato "janela" muda o destino, e o retorno é sempre uma rota nossa fixa.
+function destinoConsumo(papel: string, origem: FormDataEntryValue | null): string {
+  if (String(origem ?? "") === "janela") return "/treino";
+  return papel === "admin" ? "/admin/meus-treinamentos" : "/aluno";
+}
+
 // Guarda em que página/slide a pessoa está, para retomar de onde parou.
 // Chamado pelo visualizador a cada virada de página. É fire-and-forget: se
 // falhar, o pior caso é a pessoa recomeçar do início, então não interrompe
@@ -215,7 +223,8 @@ export async function concluir(formData: FormData) {
   if (!usuario) redirect("/login");
 
   // Admin também faz cursos, mas consome pela aba dele; o destino segue o papel.
-  const base = usuario!.papel === "admin" ? "/admin/meus-treinamentos" : "/aluno";
+  const emJanela = String(formData.get("origem") ?? "") === "janela";
+  const base = destinoConsumo(usuario!.papel, formData.get("origem"));
 
   const atribuicaoId = Number(formData.get("atribuicaoId"));
   const atrib = await prisma.atribuicao.findUnique({
@@ -240,6 +249,12 @@ export async function concluir(formData: FormData) {
     data: { concluidoEm: new Date() },
   });
 
+  // Na janela separada não existe lista para voltar: fica na própria
+  // capacitação, que agora mostra o estado "concluído" no topo.
+  if (emJanela) {
+    redirect(`${base}/${atribuicaoId}`);
+  }
+
   revalidatePath(base);
   redirect(base);
 }
@@ -260,7 +275,9 @@ export async function submeterQuiz(formData: FormData) {
   });
 
   // Admin também faz cursos, mas consome pela aba dele; o destino segue o papel.
-  const base = usuario!.papel === "admin" ? "/admin/meus-treinamentos" : "/aluno";
+  // Quem veio da janela separada volta para lá, senão o popup saltaria para
+  // dentro do app com menu e cabeçalho no meio da capacitação.
+  const base = destinoConsumo(usuario!.papel, formData.get("origem"));
 
   if (!atrib || atrib.usuarioId !== usuario!.id) redirect(base);
   if (statusDe(atrib!) === "vencido") redirect(base);
@@ -748,9 +765,7 @@ export async function criarUsuario(formData: FormData) {
   const papelPedido = String(formData.get("papel") || "aluno") === "admin" ? "admin" : "aluno";
   const papel = escopo === null ? papelPedido : "aluno";
   const clienteId = clienteParaCriacao(usuario, String(formData.get("clienteId") || ""));
-  const senhaInicial = String(formData.get("senhaInicial") || "").trim();
 
-  // A senha vem gerada pelo cliente; validamos a política no servidor por segurança.
   if (!nome || !email) {
     redirect("/admin/usuarios?erro=dados");
   }

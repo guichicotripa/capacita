@@ -9,6 +9,7 @@ type Slide = { titulo: string; conteudo: string };
 type Quiz = {
   atribuicaoId: number;
   notaMinima: number;
+  emJanela?: boolean;
   perguntas: { id: number; enunciado: string; alternativas: { id: number; texto: string }[] }[];
 };
 
@@ -37,13 +38,6 @@ export function VisualizadorSlides({
     () => new Set(Array.from({ length: inicio + 1 }, (_, i) => i))
   );
 
-  // Marca os slides já vistos (para liberar a avaliação só depois de ver tudo).
-  useEffect(() => {
-    if (idx < slides.length) {
-      setVisitados((v) => (v.has(idx) ? v : new Set(v).add(idx)));
-    }
-  }, [idx, slides.length]);
-
   // Persiste a posição. Só avança o marcador: voltar um slide para reler não
   // deve fazer a pessoa perder o ponto mais longe a que já chegou.
   const maisLonge = useRef(inicio + 1);
@@ -66,7 +60,13 @@ export function VisualizadorSlides({
 
   const irPara = (i: number) => {
     if (temQuiz && i === slides.length && !quizLiberado) return; // quiz travado
-    setIdx(Math.max(0, Math.min(total - 1, i)));
+    const alvo = Math.max(0, Math.min(total - 1, i));
+    setIdx(alvo);
+    // Marca o slide como visto aqui, na navegação, e não num efeito: a
+    // avaliação só libera depois de passar por todos.
+    if (alvo < slides.length) {
+      setVisitados((v) => (v.has(alvo) ? v : new Set(v).add(alvo)));
+    }
   };
 
   const slide = naPaginaQuiz ? null : slides[idx];
@@ -91,6 +91,7 @@ export function VisualizadorSlides({
             atribuicaoId={quiz!.atribuicaoId}
             notaMinima={quiz!.notaMinima}
             perguntas={quiz!.perguntas}
+            emJanela={quiz!.emJanela}
           />
         </div>
       ) : (

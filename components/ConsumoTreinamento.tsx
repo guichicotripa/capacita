@@ -5,25 +5,32 @@ import { statusDe, formatarData } from "@/lib/status";
 import { StatusBadge } from "@/components/StatusBadge";
 import { VisualizadorSlides } from "@/components/VisualizadorSlides";
 import { VisualizadorArquivo } from "@/components/VisualizadorArquivo";
+import { AbrirEmJanela } from "@/components/AbrirEmJanela";
 import { concluir, submeterQuiz } from "@/lib/actions";
 import { perguntasDaTentativa } from "@/lib/quiz";
 import { getDict } from "@/lib/i18n-server";
 
 // Consumo de um treinamento atribuído (slides/arquivo/vídeo/texto + quiz + revisão).
-// Compartilhado entre a visão do aluno (/aluno/[id]) e a do admin que também faz
-// cursos (/admin/meus-treinamentos/[id]); a única diferença é para onde volta.
+// Compartilhado entre a visão do aluno (/aluno/[id]), a do admin que também faz
+// cursos (/admin/meus-treinamentos/[id]) e a janela separada (/treino/[id]).
+// `emJanela` faz os envios voltarem para /treino em vez de para a lista, senão
+// a janela sem cabeçalho saltava de volta para dentro do app depois do quiz.
 export async function ConsumoTreinamento({
   atribuicaoId,
   usuarioId,
   voltarHref,
   nota,
   aprovado,
+  emJanela = false,
+  acaoVoltar,
 }: {
   atribuicaoId: number;
   usuarioId: number;
   voltarHref: string;
   nota?: string;
   aprovado?: string;
+  emJanela?: boolean;
+  acaoVoltar?: React.ReactNode;
 }) {
   const d = await getDict();
 
@@ -71,6 +78,7 @@ export async function ConsumoTreinamento({
     ? {
         atribuicaoId: atrib.id,
         notaMinima: t.notaMinima,
+        emJanela,
         perguntas: perguntasDaVez.map((p) => ({
           id: p.id,
           enunciado: p.enunciado,
@@ -81,9 +89,11 @@ export async function ConsumoTreinamento({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link href={voltarHref} className="text-sm text-slate-500 hover:underline">
-        {d.treino.voltar}
-      </Link>
+      {acaoVoltar ?? (
+        <Link href={voltarHref} className="text-sm text-slate-500 hover:underline">
+          {d.treino.voltar}
+        </Link>
+      )}
 
       <div className="mt-3 flex items-center gap-2">
         <h1 className="text-xl font-semibold">{t.titulo}</h1>
@@ -125,6 +135,10 @@ export async function ConsumoTreinamento({
           )}
         </p>
       )}
+
+      {/* Modo apresentação: mesma capacitação em janela própria, sem menu.
+          Enquanto está aberta, esta página mostra o aviso no lugar do botão. */}
+      {!emJanela && status !== "concluido" && <AbrirEmJanela href={`/treino/${atrib.id}`} />}
 
       <div className="mt-6">
         {t.tipo === "arquivo" && t.arquivo ? (
@@ -227,6 +241,7 @@ export async function ConsumoTreinamento({
           className="mt-6 space-y-5 rounded-lg border border-slate-200 bg-white p-6"
         >
           <input type="hidden" name="atribuicaoId" value={atrib.id} />
+          {emJanela && <input type="hidden" name="origem" value="janela" />}
           <h2 className="font-semibold">{d.treino.avaliacaoMin(t.notaMinima)}</h2>
           {perguntasDaVez.map((p, i) => (
             <fieldset key={p.id} className="space-y-2">
@@ -250,6 +265,7 @@ export async function ConsumoTreinamento({
           <p className="text-sm text-slate-500">{d.treino.aoTerminar}</p>
           <form action={concluir}>
             <input type="hidden" name="atribuicaoId" value={atrib.id} />
+            {emJanela && <input type="hidden" name="origem" value="janela" />}
             <button className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
               {d.treino.marcarConcluido}
             </button>
