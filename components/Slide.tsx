@@ -59,12 +59,15 @@ export function Slide({
   indice,
   total,
   rotuloPosicao,
+  grande = false,
 }: {
   slide: DadosSlide;
   formato: string;
   indice: number;
   total: number;
   rotuloPosicao: string;
+  // Modo apresentação (janela separada): slide ocupa a tela, texto maior.
+  grande?: boolean;
 }) {
   const layout = resolverLayout(slide, formato);
   const itens = linhas(slide.conteudo);
@@ -72,9 +75,9 @@ export function Slide({
 
   return (
     <div
-      className={`flex min-h-[320px] flex-col px-6 py-7 sm:px-9 ${
-        ehCapa ? "justify-center bg-slate-900 text-white" : ""
-      }`}
+      className={`flex flex-col ${
+        grande ? "min-h-[62vh] px-8 py-10 sm:px-14 sm:py-14" : "min-h-[320px] px-6 py-7 sm:px-9"
+      } ${ehCapa ? "justify-center bg-slate-900 text-white" : ""}`}
     >
       <p
         className={`text-[11px] font-semibold uppercase tracking-widest ${
@@ -86,7 +89,9 @@ export function Slide({
 
       <h2
         className={`mt-2 font-semibold tracking-tight ${
-          ehCapa ? "text-3xl sm:text-4xl" : "text-2xl text-slate-900"
+          ehCapa
+            ? grande ? "text-4xl sm:text-6xl" : "text-3xl sm:text-4xl"
+            : `${grande ? "text-3xl sm:text-4xl" : "text-2xl"} text-slate-900`
         }`}
       >
         {slide.titulo}
@@ -97,7 +102,7 @@ export function Slide({
 
       <Ilustracao svg={slide.svg} escuro={ehCapa} />
 
-      <div className={ehCapa ? "mt-5" : "mt-5"}>
+      <div className={grande ? "mt-8 text-lg sm:text-xl" : "mt-5"}>
         <Corpo layout={layout} itens={itens} escuro={ehCapa} />
       </div>
 

@@ -22,12 +22,23 @@ export function AbrirEmJanela({ href }: { href: string }) {
   }, [janela]);
 
   const abrir = () => {
-    const w = window.open(href, "capacita_treino", "width=1100,height=850,noopener");
-    // Popup bloqueado: em vez de não fazer nada, leva na própria aba.
+    // SEM "noopener": por especificação, window.open com noopener devolve null.
+    // Com ele aqui, o código achava que o popup tinha sido bloqueado, navegava a
+    // aba de origem para o treino E nunca guardava a referência — por isso o
+    // aviso não aparecia e o "trazer para frente" não tinha o que focar.
+    // A janela é do nosso próprio domínio, então abrir mão de noopener é seguro.
+    const w = window.open(
+      href,
+      "capacita_treino",
+      `width=${Math.min(1400, screen.availWidth)},height=${Math.min(900, screen.availHeight)}`
+    );
+    // Aí sim: null aqui significa popup realmente bloqueado. Leva na própria aba
+    // para a pessoa não ficar sem nada.
     if (!w) {
       window.location.href = href;
       return;
     }
+    w.focus();
     setJanela(w);
   };
 

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getUsuarioAtual } from "@/lib/auth";
 import { ConsumoTreinamento } from "@/components/ConsumoTreinamento";
 import { FecharJanela } from "@/components/FecharJanela";
+import { BotaoTelaCheia } from "@/components/BotaoTelaCheia";
 
 // Capacitação em tela cheia, sem cabeçalho nem menu. É a rota que a página
 // normal abre em outra janela: fica fora de /aluno e /admin de propósito,
@@ -22,7 +23,7 @@ export default async function TreinoEmJanelaPage({
   const lista = usuario.papel === "admin" ? "/admin/meus-treinamentos" : "/aluno";
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+    <main className="mx-auto w-full flex-1 px-4 py-5">
       <ConsumoTreinamento
         atribuicaoId={Number(id)}
         usuarioId={usuario.id}
@@ -30,7 +31,12 @@ export default async function TreinoEmJanelaPage({
         nota={nota}
         aprovado={aprovado}
         emJanela
-        acaoVoltar={<FecharJanela voltarHref={lista} />}
+        acaoVoltar={
+          <div className="flex items-center gap-4">
+            <FecharJanela voltarHref={lista} />
+            <BotaoTelaCheia />
+          </div>
+        }
       />
     </main>
   );

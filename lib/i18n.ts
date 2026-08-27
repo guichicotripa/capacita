@@ -99,6 +99,8 @@ const pt = {
     abertaEmOutraJanela: "Esta capacitação está aberta em outra janela.",
     trazerParaFrente: "Trazer para frente",
     fecharJanela: "Fechar janela",
+    telaCheia: "Tela cheia",
+    sairTelaCheia: "Sair da tela cheia",
   },
   report: {
     titulo: "Relatório de conclusão",
@@ -561,6 +563,8 @@ const es: Dict = {
     abertaEmOutraJanela: "Esta capacitación está abierta en otra ventana.",
     trazerParaFrente: "Traer al frente",
     fecharJanela: "Cerrar ventana",
+    telaCheia: "Pantalla completa",
+    sairTelaCheia: "Salir de pantalla completa",
   },
   report: {
     titulo: "Informe de finalización",

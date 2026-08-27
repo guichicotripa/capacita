@@ -88,7 +88,9 @@ export async function ConsumoTreinamento({
     : null;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    // Em janela separada o conteúdo usa a largura toda: o ponto de abrir noutra
+    // janela é ver a capacitação maior, não o mesmo bloco estreito de antes.
+    <div className={`mx-auto ${emJanela ? "max-w-6xl" : "max-w-3xl"}`}>
       {acaoVoltar ?? (
         <Link href={voltarHref} className="text-sm text-slate-500 hover:underline">
           {d.treino.voltar}
@@ -156,6 +158,7 @@ export async function ConsumoTreinamento({
             formato={t.formatoConteudo}
             atribuicaoId={atrib.id}
             progressoInicial={atrib.progresso}
+            grande={emJanela}
           />
         ) : t.tipo === "video" && t.conteudoUrl ? (
           <div className="aspect-video w-full overflow-hidden rounded-md border border-slate-200 bg-black">

@@ -22,12 +22,14 @@ export function VisualizadorSlides({
   formato = "topicos",
   atribuicaoId,
   progressoInicial = 1,
+  grande = false,
 }: {
   slides: Slide[];
   quiz?: Quiz | null;
   formato?: string;
   atribuicaoId?: number;
   progressoInicial?: number;
+  grande?: boolean;
 }) {
   const d = useDict();
   // Retoma de onde parou. Sem isto o progresso morria ao fechar a aba e a
@@ -98,6 +100,7 @@ export function VisualizadorSlides({
             indice={idx + 1}
             total={total}
             rotuloPosicao={d.treino.slideDe(idx + 1, total)}
+            grande={grande}
           />
           {temQuiz && idx === slides.length - 1 && !quizLiberado && (
             <p className="px-6 pb-4 text-xs text-amber-600 sm:px-9">{d.treino.vejaTodosSlides}</p>
