@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PaginaQuiz } from "./PaginaQuiz";
+import { Slide as SlideView, type DadosSlide } from "./Slide";
 import { useDict } from "./I18nProvider";
 import { salvarProgresso } from "@/lib/actions";
 
-type Slide = { titulo: string; conteudo: string };
+type Slide = DadosSlide;
 type Quiz = {
   atribuicaoId: number;
   notaMinima: number;
@@ -70,17 +71,12 @@ export function VisualizadorSlides({
   };
 
   const slide = naPaginaQuiz ? null : slides[idx];
-  const topicos =
-    slide?.conteudo
-      .split("\n")
-      .map((t) => t.trim())
-      .filter(Boolean) ?? [];
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       <div className="h-1 w-full bg-slate-100">
         <div
-          className="h-1 bg-slate-900 transition-all"
+          className="h-1 bg-indigo-500 transition-all"
           style={{ width: `${((idx + 1) / total) * 100}%` }}
         />
       </div>
@@ -95,30 +91,16 @@ export function VisualizadorSlides({
           />
         </div>
       ) : (
-        <div className="flex min-h-[280px] flex-col px-8 py-7">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-            {d.treino.slideDe(idx + 1, total)}
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">{slide!.titulo}</h2>
-          {/* Prosa vira parágrafo corrido; tópicos seguem com bullet. */}
-          {formato === "prosa" ? (
-            <div className="mt-5 space-y-4 leading-relaxed text-slate-700">
-              {topicos.map((t, i) => (
-                <p key={i}>{t}</p>
-              ))}
-            </div>
-          ) : (
-            <ul className="mt-5 space-y-3">
-              {topicos.map((t, i) => (
-                <li key={i} className="flex gap-3 text-slate-700">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                  <span>{t}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div>
+          <SlideView
+            slide={slide!}
+            formato={formato}
+            indice={idx + 1}
+            total={total}
+            rotuloPosicao={d.treino.slideDe(idx + 1, total)}
+          />
           {temQuiz && idx === slides.length - 1 && !quizLiberado && (
-            <p className="mt-auto pt-4 text-xs text-amber-600">{d.treino.vejaTodosSlides}</p>
+            <p className="px-6 pb-4 text-xs text-amber-600 sm:px-9">{d.treino.vejaTodosSlides}</p>
           )}
         </div>
       )}

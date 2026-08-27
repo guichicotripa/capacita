@@ -51,6 +51,16 @@ export default async function TreinamentosPage({
           {d.admin.treinos.atualizadoOk}
         </p>
       )}
+      {ok === "criadoComQuiz" && (
+        <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          {d.admin.treinos.okCriadoComQuiz}
+        </p>
+      )}
+      {ok === "criadoSemQuiz" && (
+        <p className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {d.admin.treinos.okCriadoSemQuiz}
+        </p>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         {/* No celular a tabela não cabe: rola na horizontal em vez de ser cortada. */}

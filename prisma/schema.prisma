@@ -110,6 +110,12 @@ model Slide {
   ordem         Int         @default(0)
   titulo        String
   conteudo      String // tópicos separados por quebra de linha
+  // Como o slide e desenhado: capa | topicos | prosa | destaque | comparacao |
+  // passos | fechamento. Antes todo slide era uma lista de bullets igual.
+  layout        String      @default("topicos")
+  // Ilustracao do slide, em SVG inline gerado junto com o conteudo. Passa pelo
+  // sanitizador (lib/svg.ts) antes de ir para a tela. Null = slide sem imagem.
+  svg           String?
 
   @@index([treinamentoId])
 }

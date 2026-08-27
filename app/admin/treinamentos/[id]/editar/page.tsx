@@ -105,7 +105,12 @@ export default async function EditarTreinamentoPage({
           <div>
             <span className="mb-2 block text-xs font-medium text-slate-600">{d.admin.editar.slides}</span>
             <EditorSlides
-              inicial={treino.slides.map((s) => ({ titulo: s.titulo, conteudo: s.conteudo }))}
+              inicial={treino.slides.map((s) => ({
+                titulo: s.titulo,
+                conteudo: s.conteudo,
+                layout: s.layout,
+                svg: s.svg,
+              }))}
             />
           </div>
         )}

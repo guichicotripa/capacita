@@ -31,9 +31,16 @@ import { notificar, enviarEmail } from "./email";
 import { enviarLembretes } from "./lembretes";
 import { cookies } from "next/headers";
 import { LANG_COOKIE } from "./i18n-server";
-import { iaDisponivel, gerarCursoIA, type CursoGerado } from "./ai";
+import {
+  iaDisponivel,
+  gerarCursoIA,
+  gerarQuizIA,
+  type CursoGerado,
+  type PerguntaGerada,
+} from "./ai";
 import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 import { extrairTextoPptx } from "./pptx";
+import { sanitizarSvg } from "./svg";
 
 // Cria um treinamento em slides + quiz a partir de um curso gerado (helper interno).
 async function persistirCurso(
@@ -54,6 +61,9 @@ async function persistirCurso(
           ordem: i,
           titulo: s.titulo,
           conteudo: s.conteudo,
+          layout: s.layout ?? "topicos",
+          // A ilustração vem da IA e vai parar no DOM: só entra sanitizada.
+          svg: sanitizarSvg(s.svg),
         })),
       },
       perguntas: {
@@ -474,6 +484,24 @@ export async function subirArquivo(formData: FormData) {
 
   const bytes = Buffer.from(await arquivo!.arrayBuffer());
 
+  // Avaliação do material subido. Antes o arquivo entrava sem quiz nenhum e não
+  // havia como perceber: o aluno via o PDF e só clicava em "concluído".
+  // Se a IA falhar (ou não tiver chave), o treinamento é criado mesmo assim e o
+  // admin monta o quiz na mão — perder o material por causa disso seria pior.
+  let perguntas: PerguntaGerada[] = [];
+  if (iaDisponivel()) {
+    try {
+      perguntas = await gerarQuizIA(
+        titulo,
+        ehPdf
+          ? { tipo: "pdf", dados: bytes }
+          : { tipo: "texto", texto: await extrairTextoPptx(bytes) }
+      );
+    } catch (e) {
+      console.error("Falha ao gerar o quiz do arquivo:", e);
+    }
+  }
+
   await prisma.treinamento.create({
     data: {
       titulo,
@@ -483,11 +511,18 @@ export async function subirArquivo(formData: FormData) {
       arquivo: {
         create: { mime, nomeOriginal: arquivo!.name, dados: bytes },
       },
+      perguntas: {
+        create: perguntas.map((p, i) => ({
+          enunciado: p.enunciado,
+          ordem: i,
+          alternativas: { create: p.alternativas },
+        })),
+      },
     },
   });
 
   revalidatePath("/admin/treinamentos");
-  redirect("/admin/treinamentos");
+  redirect(`/admin/treinamentos?ok=${perguntas.length > 0 ? "criadoComQuiz" : "criadoSemQuiz"}`);
 }
 
 // Admin desatribui um treinamento de um aluno (remove a atribuição).
@@ -568,7 +603,15 @@ export async function atualizarTreinamento(formData: FormData) {
 
   // Slides: substitui o deck inteiro pelo que veio do editor (JSON ordenado).
   if (treino!.tipo === "slides") {
-    let slides: { titulo: string; conteudo: string }[] = [];
+    // layout e svg vêm de volta do editor sem serem editados lá. Se não fossem
+    // repassados aqui, editar o texto de um slide apagaria a ilustração e o
+    // layout dele, porque o deck é recriado do zero.
+    let slides: {
+      titulo: string;
+      conteudo: string;
+      layout?: string | null;
+      svg?: string | null;
+    }[] = [];
     try {
       slides = JSON.parse(String(formData.get("slidesJson") || "[]"));
     } catch {
@@ -583,6 +626,9 @@ export async function atualizarTreinamento(formData: FormData) {
           ordem: i,
           titulo: (s.titulo || "").trim(),
           conteudo: (s.conteudo || "").trim(),
+          layout: s.layout || "topicos",
+          // Re-sanitiza: o JSON veio do navegador, não é fonte confiável.
+          svg: sanitizarSvg(s.svg),
         })),
       });
     }

@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useDict } from "./I18nProvider";
 
-type Slide = { titulo: string; conteudo: string };
+// layout e svg não são editáveis aqui, mas viajam junto: a ação de salvar apaga
+// e recria os slides a partir deste JSON, então o que não vier aqui é perdido.
+type Slide = { titulo: string; conteudo: string; layout?: string | null; svg?: string | null };
 
 // Editor do deck de slides: adicionar, remover, reordenar e editar cada slide.
 // Serializa tudo num input escondido (slidesJson) que a ação lê no submit.
@@ -13,7 +15,7 @@ export function EditorSlides({ inicial }: { inicial: Slide[] }) {
     inicial.length > 0 ? inicial : [{ titulo: "", conteudo: "" }]
   );
 
-  const atualizar = (i: number, campo: keyof Slide, valor: string) =>
+  const atualizar = (i: number, campo: "titulo" | "conteudo", valor: string) =>
     setSlides((s) => s.map((sl, idx) => (idx === i ? { ...sl, [campo]: valor } : sl)));
 
   const adicionar = () => setSlides((s) => [...s, { titulo: "", conteudo: "" }]);
