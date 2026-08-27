@@ -55,18 +55,18 @@ export const PERGUNTAS_NO_BANCO = 12;
 // Usamos structured outputs (output_config.format). Com isso a resposta é JSON
 // válido por construção, em vez de texto que a gente tenta limpar na unha.
 
+// ATENÇÃO: structured outputs não aceita minItems/maxItems diferentes de 0 ou 1
+// em array ("For 'array' type, 'minItems' values other than 0 or 1 are not
+// supported"). Usar 12/4/5 aqui derrubava TODA a geração com 400. As quantidades
+// são pedidas no texto do prompt e conferidas depois que a resposta chega.
 const SCHEMA_PERGUNTAS = {
   type: "array",
-  minItems: PERGUNTAS_NO_BANCO,
-  maxItems: PERGUNTAS_NO_BANCO,
   items: {
     type: "object",
     properties: {
       enunciado: { type: "string" },
       alternativas: {
         type: "array",
-        minItems: 4,
-        maxItems: 4,
         items: {
           type: "object",
           properties: {
@@ -90,8 +90,6 @@ const SCHEMA_CURSO = {
     descricao: { type: "string" },
     slides: {
       type: "array",
-      minItems: 5,
-      maxItems: 7,
       items: {
         type: "object",
         properties: {
@@ -224,8 +222,29 @@ function lerJson<T>(texto: string, contexto: string): T {
   try {
     return JSON.parse(texto) as T;
   } catch {
-    throw new Error(`Resposta da IA não é JSON válido (${contexto}).`);
+    throw new ErroIA(`Resposta da IA não é JSON válido (${contexto}).`);
   }
+}
+
+// Erro de IA com motivo legível. O que a API devolve é específico o bastante
+// para resolver o problema ("minItems não suportado", "modelo inválido"), então
+// não pode morrer só no console: quem está na tela precisa saber que a falha
+// não é falta de chave.
+export class ErroIA extends Error {
+  constructor(public readonly motivo: string) {
+    super(motivo);
+    this.name = "ErroIA";
+  }
+}
+
+export function motivoDoErro(e: unknown): string {
+  if (e instanceof Anthropic.APIError) {
+    const corpo = e.error as { error?: { message?: string } } | undefined;
+    const detalhe = corpo?.error?.message ?? e.message;
+    return `API ${e.status}: ${detalhe}`;
+  }
+  if (e instanceof Error) return e.message;
+  return String(e);
 }
 
 function textoDaResposta(content: Anthropic.ContentBlock[]): string {
@@ -261,7 +280,15 @@ export async function gerarCursoIA(
 
   const curso = lerJson<CursoGerado>(textoDaResposta(response.content), `curso "${tema}"`);
   if (!curso.titulo || !Array.isArray(curso.slides) || !Array.isArray(curso.perguntas)) {
-    throw new Error("Resposta da IA em formato inesperado.");
+    throw new ErroIA("Resposta da IA em formato inesperado.");
+  }
+  if (curso.slides.length === 0) throw new ErroIA("A IA não devolveu nenhum slide.");
+  // As quantidades são pedidas no prompt, não impostas pelo schema. Se vierem
+  // diferentes o curso continua utilizável, então só registramos.
+  if (curso.perguntas.length !== PERGUNTAS_NO_BANCO) {
+    console.warn(
+      `[IA] curso "${tema}" veio com ${curso.perguntas.length} perguntas (esperado ${PERGUNTAS_NO_BANCO})`
+    );
   }
   return curso;
 }
@@ -322,7 +349,7 @@ Tudo em português do Brasil.`;
 
   const slide = lerJson<SlideGerado>(textoDaResposta(response.content), `slide "${atual.titulo}"`);
   if (!slide.titulo || typeof slide.conteudo !== "string") {
-    throw new Error("Resposta da IA em formato inesperado.");
+    throw new ErroIA("Resposta da IA em formato inesperado.");
   }
   return slide;
 }
@@ -372,7 +399,7 @@ export async function gerarQuizIA(
     `quiz "${titulo}"`
   );
   if (!Array.isArray(perguntas) || perguntas.length === 0) {
-    throw new Error("Resposta da IA em formato inesperado.");
+    throw new ErroIA("A IA não devolveu nenhuma pergunta.");
   }
   return perguntas;
 }

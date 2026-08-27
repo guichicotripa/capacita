@@ -36,6 +36,7 @@ import {
   gerarCursoIA,
   gerarQuizIA,
   gerarSlideIA,
+  motivoDoErro,
   type CursoGerado,
   type PerguntaGerada,
 } from "./ai";
@@ -363,8 +364,11 @@ export async function gerarTreinamentoIA(formData: FormData) {
   try {
     curso = await gerarCursoIA(tema, undefined, instrucoes || undefined, formato);
   } catch (e) {
+    // "sem chave" e "a chamada falhou" são coisas diferentes. Juntar as duas num
+    // aviso só mandou o admin conferir a chave enquanto o problema real era um
+    // schema inválido, e isso custou tempo. O motivo vai junto na URL.
     console.error("Falha na geração por IA:", e);
-    redirect("/admin/treinamentos/novo?erro=ia");
+    redirect(`/admin/treinamentos/novo?erro=iaFalhou&motivo=${encodeURIComponent(motivoDoErro(e).slice(0, 300))}`);
   }
 
   await persistirCurso(curso!, clienteId, formato);
@@ -399,7 +403,7 @@ export async function gerarCursoDePPT(formData: FormData) {
     curso = await gerarCursoIA("(a partir da apresentação enviada)", texto!);
   } catch (e) {
     console.error("Falha na geração por IA:", e);
-    redirect("/admin/treinamentos?erro=ia");
+    redirect(`/admin/treinamentos?erro=iaFalhou&motivo=${encodeURIComponent(motivoDoErro(e).slice(0, 300))}`);
   }
 
   await persistirCurso(curso!, clienteId);
@@ -412,7 +416,7 @@ export async function gerarCursoDePPT(formData: FormData) {
 // ainda vê a prévia e decide se salva. Assim "refazer" nunca destrói trabalho.
 export type ResultadoSlideIA =
   | { ok: true; slide: { titulo: string; conteudo: string; layout: string; svg: string | null } }
-  | { ok: false; erro: "auth" | "semIa" | "dados" | "falha" };
+  | { ok: false; erro: "auth" | "semIa" | "dados" | "falha"; motivo?: string };
 
 export async function refazerSlideComIA(
   treinamentoId: number,
@@ -456,7 +460,7 @@ export async function refazerSlideComIA(
     };
   } catch (e) {
     console.error("Falha ao refazer slide com IA:", e);
-    return { ok: false, erro: "falha" };
+    return { ok: false, erro: "falha", motivo: motivoDoErro(e).slice(0, 300) };
   }
 }
 

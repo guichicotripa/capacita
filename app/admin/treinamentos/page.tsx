@@ -9,9 +9,9 @@ import { getDict } from "@/lib/i18n-server";
 export default async function TreinamentosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string }>;
+  searchParams: Promise<{ ok?: string; erro?: string; motivo?: string }>;
 }) {
-  const { ok } = await searchParams;
+  const { ok, erro, motivo } = await searchParams;
   const usuario = (await getUsuarioAtual())!;
   const escopo = escopoCliente(usuario);
   const d = await getDict();
@@ -49,6 +49,16 @@ export default async function TreinamentosPage({
       {ok === "editado" && (
         <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
           {d.admin.treinos.atualizadoOk}
+        </p>
+      )}
+      {erro === "iaFalhou" && (
+        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+          {motivo ? d.admin.treinos.erroIaFalhou(motivo) : d.admin.treinos.erroIaFalhouSemMotivo}
+        </p>
+      )}
+      {erro === "ia" && (
+        <p className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {d.admin.treinos.erroIa}
         </p>
       )}
       {ok === "criadoComQuiz" && (
@@ -121,9 +131,15 @@ export default async function TreinamentosPage({
                     {/* Editar/quiz/remover só para treinos que este admin pode editar. */}
                     {podeEditarTreino(t, usuario) && (
                       <>
-                        <IconLink href={`/admin/treinamentos/${t.id}/editar`} titulo={d.admin.treinos.editar}>
+                        {/* Editar leva ao editor de slides e era só um lápis sem
+                            rótulo: ninguém achava. Agora vai com texto. */}
+                        <Link
+                          href={`/admin/treinamentos/${t.id}/editar`}
+                          className="mr-1 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >
                           <IconPencil />
-                        </IconLink>
+                          {t.tipo === "slides" ? d.admin.treinos.editarSlides : d.admin.treinos.editar}
+                        </Link>
                         <IconLink
                           href={`/admin/treinamentos/${t.id}/quiz`}
                           titulo={t._count.perguntas > 0 ? d.admin.treinos.editarQuiz : d.admin.treinos.addQuiz}

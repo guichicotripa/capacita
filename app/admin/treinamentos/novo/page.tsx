@@ -11,9 +11,9 @@ import { getDict } from "@/lib/i18n-server";
 export default async function NovoTreinamentoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string }>;
+  searchParams: Promise<{ erro?: string; motivo?: string }>;
 }) {
-  const { erro } = await searchParams;
+  const { erro, motivo } = await searchParams;
   const usuario = (await getUsuarioAtual())!;
   const full = ehFullAdmin(usuario);
   const d = await getDict();
@@ -34,6 +34,13 @@ export default async function NovoTreinamentoPage({
       {erro === "ia" && (
         <p className="mb-4 max-w-md rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
           {d.admin.treinos.erroIa}
+        </p>
+      )}
+      {/* Falha de chamada é diferente de falta de chave: o motivo da API vem
+          junto para não mandar ninguém procurar no lugar errado. */}
+      {erro === "iaFalhou" && (
+        <p className="mb-4 max-w-2xl rounded-md bg-red-50 px-3 py-2 text-xs text-red-800">
+          {motivo ? d.admin.treinos.erroIaFalhou(motivo) : d.admin.treinos.erroIaFalhouSemMotivo}
         </p>
       )}
       {erro === "ppt" && (

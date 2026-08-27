@@ -112,7 +112,13 @@ function CartaoSlide({
         onTrocar(r.slide);
         setInstrucao("");
       } else {
-        setErroIa(d.admin.editorSlides.erroIa[r.erro]);
+        // Mostra o motivo real quando existe: "não foi possível" sozinho não
+        // ajuda ninguém a resolver.
+        setErroIa(
+          r.motivo
+            ? `${d.admin.editorSlides.erroIa[r.erro]} (${r.motivo})`
+            : d.admin.editorSlides.erroIa[r.erro]
+        );
       }
     });
   };
