@@ -80,6 +80,21 @@ test("remove tag desconhecida mas mantém o resto", () => {
   assert.match(r!, /<circle/);
 });
 
+test("aceita SVG com declaração XML e DOCTYPE antes da raiz", () => {
+  // É como Illustrator e Figma exportam. Rejeitar isso derrubava todo logo real.
+  const r = sanitizarSvg(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>`
+  );
+  assert.ok(r);
+  assert.match(r!, /<circle/);
+  assert.doesNotMatch(r!, /DOCTYPE/i);
+  assert.doesNotMatch(r!, /<\?xml/i);
+});
+
+test("prólogo XML não vira brecha: HTML com prólogo continua recusado", () => {
+  assert.equal(sanitizarSvg(`<?xml version="1.0"?><html><script>alert(1)</script></html>`), null);
+});
+
 test("recusa conteúdo que não começa com <svg>", () => {
   assert.equal(sanitizarSvg(`<div onclick="x()">oi</div>`), null);
   assert.equal(sanitizarSvg(`alert(1)`), null);

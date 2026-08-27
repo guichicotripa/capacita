@@ -14,7 +14,12 @@ export default async function AlunoLayout({
 
   return (
     <>
-      <Header nome={usuario.nome} papel="aluno" />
+      <Header
+        nome={usuario.nome}
+        papel="aluno"
+        clienteId={usuario.cliente?.logoMime ? usuario.clienteId : null}
+        clienteNome={usuario.cliente?.nome}
+      />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
     </>
   );

@@ -27,7 +27,12 @@ export default async function CertificadoPage({
 
   const atrib = await prisma.atribuicao.findUnique({
     where: { id: Number(id) },
-    include: { treinamento: true, usuario: { include: { cliente: true } } },
+    include: {
+      treinamento: true,
+      // omit no logo: são bytes e a página só precisa saber se existe, o que a
+      // própria rota /api/cliente/[id]/logo resolve ao ser pedida.
+      usuario: { include: { cliente: { omit: { logo: true } } } },
+    },
   });
   if (!atrib) notFound();
   // Só o dono vê o próprio certificado. Admin vê os dos outros, mas admin de
@@ -52,6 +57,14 @@ export default async function CertificadoPage({
 
   const codigo = codigoCertificado(atrib.id, atrib.concluidoEm);
 
+  // Identidade visual da empresa do aluno. Sem empresa ou sem logo, cai no
+  // padrão da plataforma.
+  const cliente = atrib.usuario.cliente;
+  const cor = cliente?.corPrimaria || "#0f172a";
+  // logoMime vem junto (é texto curto) e serve de indicador de existência sem
+  // trazer os bytes.
+  const temLogo = Boolean(cliente?.logoMime);
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <div className="no-print mb-4 flex items-center justify-between">
@@ -61,14 +74,30 @@ export default async function CertificadoPage({
         <BotaoImprimir rotulo={d.certificado.imprimir} />
       </div>
 
-      {/* Folha do certificado */}
-      <div className="certificado rounded-xl border-4 border-slate-900 bg-white p-10 text-center">
-        <div className="mb-6 flex items-center justify-center gap-2">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-slate-900 text-lg font-bold text-white">
-            C
-          </span>
-          <span className="text-lg font-semibold tracking-wide">Capacita</span>
-        </div>
+      {/* Folha do certificado. A borda leva a cor da empresa quando houver: é o
+          documento que o RH arquiva, então é onde a marca do cliente mais vale. */}
+      <div
+        className="certificado rounded-xl border-4 bg-white p-10 text-center"
+        style={{ borderColor: cor }}
+      >
+        {temLogo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={`/api/cliente/${cliente!.id}/logo`}
+            alt={cliente!.nome}
+            className="mx-auto mb-6 max-h-16 max-w-[14rem] object-contain"
+          />
+        ) : (
+          <div className="mb-6 flex items-center justify-center gap-2">
+            <span
+              className="grid h-10 w-10 place-items-center rounded-lg text-lg font-bold text-white"
+              style={{ backgroundColor: cor }}
+            >
+              C
+            </span>
+            <span className="text-lg font-semibold tracking-wide">Capacita</span>
+          </div>
+        )}
 
         <h1 className="text-2xl font-bold uppercase tracking-wide text-slate-900">
           {d.certificado.titulo}

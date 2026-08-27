@@ -26,7 +26,7 @@ export default async function AtribuirPage({
     // de fora — não conseguem entrar para fazer o treinamento.
     prisma.usuario.findMany({
       where: escopo === null ? { ativo: true } : { ativo: true, clienteId: escopo },
-      include: { cliente: true },
+      include: { cliente: { omit: { logo: true } } },
       orderBy: { nome: "asc" },
     }),
     escopo === null

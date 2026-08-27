@@ -22,6 +22,12 @@ model Cliente {
   email        String?
   telefone     String?
   responsavel  String? // pessoa de contato na empresa
+  // Identidade visual do cliente. O logo fica no banco de proposito: e pequeno
+  // (<200KB), e um por cliente e e lido em quase toda tela daquela empresa —
+  // perfil diferente do PDF de treinamento, que e grande e por curso.
+  logo         Bytes?
+  logoMime     String? // image/png | image/jpeg | image/svg+xml | image/webp
+  corPrimaria  String? // hex #rrggbb; null = usa a cor padrao da plataforma
   usuarios     Usuario[]
   treinamentos Treinamento[]
   criadoEm     DateTime      @default(now())

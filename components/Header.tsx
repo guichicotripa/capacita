@@ -7,10 +7,16 @@ export async function Header({
   nome,
   papel,
   children,
+  clienteId,
+  clienteNome,
 }: {
   nome: string;
   papel: string;
   children?: React.ReactNode;
+  // Logo da empresa do usuário, quando ela tiver um. Fica ao lado do selo da
+  // plataforma, não no lugar dele: é co-branding, não white-label total.
+  clienteId?: number | null;
+  clienteNome?: string | null;
 }) {
   const d = await getDict();
   return (
@@ -31,6 +37,18 @@ export async function Header({
               para uma terceira linha. */}
           <span className="hidden font-semibold sm:inline">Capacita</span>
         </Link>
+
+        {clienteId && (
+          <>
+            <span aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-slate-200 sm:block" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/cliente/${clienteId}/logo`}
+              alt={clienteNome ?? ""}
+              className="hidden max-h-6 max-w-[7rem] shrink-0 object-contain sm:block"
+            />
+          </>
+        )}
         {children && (
           <nav className="order-last -mx-4 flex w-full gap-4 overflow-x-auto whitespace-nowrap px-4 text-sm text-slate-600 sm:order-none sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">
             {children}

@@ -42,7 +42,10 @@ export async function getUsuarioAtual() {
   if (!uid) return null;
   return prisma.usuario.findUnique({
     where: { id: uid },
-    include: { cliente: true },
+    // omit no logo: getUsuarioAtual roda em TODA requisição autenticada, e
+    // carregar os bytes do logo aqui seria custo em cada page load. logoMime
+    // (texto curto) fica, e serve de indicador de existência.
+    include: { cliente: { omit: { logo: true } } },
   });
 }
 

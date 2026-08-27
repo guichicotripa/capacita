@@ -44,6 +44,7 @@ import {
 import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 import { extrairTextoPptx } from "./pptx";
 import { sanitizarSvg } from "./svg";
+import { validarLogo, normalizarCor } from "./logo";
 
 // Cria um treinamento em slides + quiz a partir de um curso gerado (helper interno).
 async function persistirCurso(
@@ -857,6 +858,49 @@ export async function criarCliente(formData: FormData) {
   });
   revalidatePath("/admin/clientes");
   redirect("/admin/clientes?ok=criado");
+}
+
+// Identidade visual da empresa: logo e cor. Aparece na capa da capacitação, no
+// certificado e no cabeçalho de quem é daquele cliente.
+// O admin de cliente mexe só na própria empresa; o admin geral, em qualquer uma.
+export async function salvarIdentidadeCliente(formData: FormData) {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") redirect("/login");
+
+  const id = Number(formData.get("id"));
+  const escopo = escopoCliente(usuario);
+  if (escopo !== null && escopo !== id) redirect("/admin/clientes");
+
+  const cliente = await prisma.cliente.findUnique({ where: { id } });
+  if (!cliente) redirect("/admin/clientes");
+
+  const cor = normalizarCor(String(formData.get("corPrimaria") || ""));
+  // Uint8Array<ArrayBuffer> e não Buffer: é exatamente o que o Prisma 6 espera
+  // em campo Bytes, e Buffer não satisfaz esse tipo.
+  const dados: {
+    corPrimaria: string | null;
+    logo?: Uint8Array<ArrayBuffer> | null;
+    logoMime?: string | null;
+  } = { corPrimaria: cor };
+
+  // Remover o logo é uma ação explícita: mandar o formulário sem escolher
+  // arquivo NÃO apaga o que já existe.
+  if (String(formData.get("removerLogo") || "") === "1") {
+    dados.logo = null;
+    dados.logoMime = null;
+  } else {
+    const arquivo = formData.get("logo") as File | null;
+    if (arquivo && arquivo.size > 0) {
+      const r = validarLogo(Buffer.from(await arquivo.arrayBuffer()));
+      if ("erro" in r) redirect(`/admin/clientes?erro=logo${r.erro}`);
+      dados.logo = new Uint8Array(r.dados);
+      dados.logoMime = r.mime;
+    }
+  }
+
+  await prisma.cliente.update({ where: { id }, data: dados });
+  revalidatePath("/admin/clientes");
+  redirect("/admin/clientes?ok=identidade");
 }
 
 // Admin cria um usuário com senha inicial (que ele troca no 1º acesso) e

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PaginaQuiz } from "./PaginaQuiz";
-import { Slide as SlideView, type DadosSlide } from "./Slide";
+import { Slide as SlideView, type DadosSlide, type Marca } from "./Slide";
 import { useDict } from "./I18nProvider";
 import { salvarProgresso } from "@/lib/actions";
 
@@ -23,6 +23,7 @@ export function VisualizadorSlides({
   atribuicaoId,
   progressoInicial = 1,
   grande = false,
+  marca,
 }: {
   slides: Slide[];
   quiz?: Quiz | null;
@@ -30,6 +31,7 @@ export function VisualizadorSlides({
   atribuicaoId?: number;
   progressoInicial?: number;
   grande?: boolean;
+  marca?: Marca;
 }) {
   const d = useDict();
   // Retoma de onde parou. Sem isto o progresso morria ao fechar a aba e a
@@ -78,8 +80,11 @@ export function VisualizadorSlides({
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       <div className="h-1 w-full bg-slate-100">
         <div
-          className="h-1 bg-indigo-500 transition-all"
-          style={{ width: `${((idx + 1) / total) * 100}%` }}
+          className="h-1 transition-all"
+          style={{
+            width: `${((idx + 1) / total) * 100}%`,
+            backgroundColor: marca?.cor || "#4f46e5",
+          }}
         />
       </div>
 
@@ -101,6 +106,7 @@ export function VisualizadorSlides({
             total={total}
             rotuloPosicao={d.treino.slideDe(idx + 1, total)}
             grande={grande}
+            marca={marca}
           />
           {temQuiz && idx === slides.length - 1 && !quizLiberado && (
             <p className="px-6 pb-4 text-xs text-amber-600 sm:px-9">{d.treino.vejaTodosSlides}</p>

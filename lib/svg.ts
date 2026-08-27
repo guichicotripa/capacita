@@ -91,7 +91,16 @@ const VALOR_PERIGOSO = /javascript:|data:|<|&#|expression\(|url\(\s*['"]?\s*(?!#
  */
 export function sanitizarSvg(bruto: string | null | undefined): string | null {
   if (!bruto) return null;
-  const texto = bruto.trim();
+  // Tira BOM, declaração XML e DOCTYPE ANTES de exigir a raiz <svg>: arquivo de
+  // logo exportado por Illustrator/Figma começa com <?xml version="1.0"?>, e
+  // checar antes disso rejeitava todo SVG de verdade. Não afrouxa a regra —
+  // continua exigindo que a raiz do documento seja <svg>.
+  const texto = bruto
+    .replace(/^﻿/, "")
+    .replace(/<\?[\s\S]*?\?>/g, "")
+    .replace(/<!DOCTYPE[^>]*>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .trim();
   if (!texto.toLowerCase().startsWith("<svg")) return null;
   // Limite de tamanho: ilustração de slide não passa disso, e evita que uma
   // geração descontrolada vire um payload gigante no banco e na página.

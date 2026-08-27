@@ -19,7 +19,12 @@ export default async function AdminLayout({
 
   return (
     <>
-      <Header nome={usuario.nome} papel="admin">
+      <Header
+        nome={usuario.nome}
+        papel="admin"
+        clienteId={usuario.cliente?.logoMime ? usuario.clienteId : null}
+        clienteNome={usuario.cliente?.nome}
+      >
         <Link href="/admin" className="hover:text-slate-900">
           {d.nav.relatorio}
         </Link>

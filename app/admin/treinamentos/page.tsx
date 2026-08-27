@@ -19,7 +19,7 @@ export default async function TreinamentosPage({
     // Admin de cliente vê os treinos do próprio cliente + os globais.
     where: escopo === null ? {} : { OR: [{ clienteId: escopo }, { clienteId: null }] },
     include: {
-      cliente: true,
+      cliente: { omit: { logo: true } },
       _count: {
         select: {
           // A contagem também respeita o escopo. Sem este filtro, um treino

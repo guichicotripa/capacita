@@ -26,7 +26,7 @@ export default async function RelatorioPage({
 
   const atribuicoes = await prisma.atribuicao.findMany({
     where: clienteId ? { usuario: { clienteId } } : {},
-    include: { treinamento: true, usuario: { include: { cliente: true } } },
+    include: { treinamento: true, usuario: { include: { cliente: { omit: { logo: true } } } } },
     orderBy: { prazo: "asc" },
   });
 

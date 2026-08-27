@@ -42,7 +42,7 @@ export default async function UsuariosPage({
     prisma.usuario.findMany({
       // Admin de cliente só vê usuários do próprio cliente.
       where: escopo === null ? {} : { clienteId: escopo },
-      include: { cliente: true },
+      include: { cliente: { omit: { logo: true } } },
       orderBy: [{ ativo: "desc" }, { papel: "asc" }, { nome: "asc" }],
     }),
     // Só o full admin escolhe cliente ao criar/editar usuário.

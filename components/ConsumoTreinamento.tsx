@@ -37,6 +37,9 @@ export async function ConsumoTreinamento({
   const atrib = await prisma.atribuicao.findUnique({
     where: { id: atribuicaoId },
     include: {
+      // Identidade visual vem da empresa do ALUNO, não do dono do treinamento:
+      // um treino global atribuído à Acme deve sair com a marca da Acme.
+      usuario: { select: { clienteId: true, cliente: { select: { corPrimaria: true } } } },
       treinamento: {
         include: {
           slides: { orderBy: { ordem: "asc" } },
@@ -55,6 +58,13 @@ export async function ConsumoTreinamento({
 
   const t = atrib.treinamento;
   const temQuiz = t.perguntas.length > 0;
+
+  const marca = atrib.usuario.clienteId
+    ? {
+        logoUrl: `/api/cliente/${atrib.usuario.clienteId}/logo`,
+        cor: atrib.usuario.cliente?.corPrimaria ?? null,
+      }
+    : undefined;
 
   // Perguntas desta tentativa: um sorteio do banco. Reprovou, sobe a tentativa
   // e cai outro conjunto — em vez de repetir as mesmas perguntas de sempre.
@@ -159,6 +169,7 @@ export async function ConsumoTreinamento({
             atribuicaoId={atrib.id}
             progressoInicial={atrib.progresso}
             grande={emJanela}
+            marca={marca}
           />
         ) : t.tipo === "video" && t.conteudoUrl ? (
           <div className="aspect-video w-full overflow-hidden rounded-md border border-slate-200 bg-black">

@@ -28,6 +28,12 @@ export type DadosSlide = {
   svg?: string | null;
 };
 
+// Identidade visual da empresa dona da capacitação. Sem isso, o slide usa o
+// indigo padrão da plataforma e não mostra logo nenhum.
+export type Marca = { logoUrl: string | null; cor: string | null };
+
+const COR_PADRAO = "#4f46e5";
+
 const LAYOUTS = new Set<LayoutSlide>([
   "capa",
   "topicos",
@@ -60,6 +66,7 @@ export function Slide({
   total,
   rotuloPosicao,
   grande = false,
+  marca,
 }: {
   slide: DadosSlide;
   formato: string;
@@ -68,10 +75,12 @@ export function Slide({
   rotuloPosicao: string;
   // Modo apresentação (janela separada): slide ocupa a tela, texto maior.
   grande?: boolean;
+  marca?: Marca;
 }) {
   const layout = resolverLayout(slide, formato);
   const itens = linhas(slide.conteudo);
   const ehCapa = layout === "capa";
+  const cor = marca?.cor || COR_PADRAO;
 
   return (
     <div
@@ -79,10 +88,21 @@ export function Slide({
         grande ? "min-h-[62vh] px-8 py-10 sm:px-14 sm:py-14" : "min-h-[320px] px-6 py-7 sm:px-9"
       } ${ehCapa ? "justify-center bg-slate-900 text-white" : ""}`}
     >
+      {/* Logo da empresa no topo do slide, quando houver. */}
+      {marca?.logoUrl && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={marca.logoUrl}
+          alt=""
+          className={`mb-4 max-w-[9rem] object-contain ${grande ? "max-h-12" : "max-h-8"} ${
+            ehCapa ? "opacity-95" : ""
+          }`}
+        />
+      )}
+
       <p
-        className={`text-[11px] font-semibold uppercase tracking-widest ${
-          ehCapa ? "text-slate-400" : "text-indigo-500"
-        }`}
+        className="text-[11px] font-semibold uppercase tracking-widest"
+        style={{ color: ehCapa ? "#94a3b8" : cor }}
       >
         {rotuloPosicao}
       </p>
@@ -98,12 +118,14 @@ export function Slide({
       </h2>
 
       {/* Barra de destaque sob o título: dá ritmo visual entre os slides. */}
-      {!ehCapa && <div className="mt-3 h-1 w-12 rounded-full bg-indigo-500" />}
+      {!ehCapa && (
+        <div className="mt-3 h-1 w-12 rounded-full" style={{ backgroundColor: cor }} />
+      )}
 
       <Ilustracao svg={slide.svg} escuro={ehCapa} />
 
       <div className={grande ? "mt-8 text-lg sm:text-xl" : "mt-5"}>
-        <Corpo layout={layout} itens={itens} escuro={ehCapa} />
+        <Corpo layout={layout} itens={itens} escuro={ehCapa} cor={cor} />
       </div>
 
       <span className="sr-only">
@@ -133,10 +155,12 @@ function Corpo({
   layout,
   itens,
   escuro,
+  cor,
 }: {
   layout: LayoutSlide;
   itens: string[];
   escuro: boolean;
+  cor: string;
 }) {
   const corTexto = escuro ? "text-slate-200" : "text-slate-700";
 
@@ -177,7 +201,7 @@ function Corpo({
     const ruins = itens.filter((t) => t.startsWith("-")).map((t) => t.slice(1).trim());
     // Sem os marcadores + e -, não há o que comparar: cai para bullets.
     if (bons.length === 0 && ruins.length === 0) {
-      return <Bullets itens={itens} corTexto={corTexto} />;
+      return <Bullets itens={itens} corTexto={corTexto} cor={cor} />;
     }
     return (
       <div className="grid gap-3 sm:grid-cols-2">
@@ -192,7 +216,10 @@ function Corpo({
       <ol className="space-y-3">
         {itens.map((t, i) => (
           <li key={i} className={`flex gap-3 ${corTexto}`}>
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+            <span
+              className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold text-white"
+              style={{ backgroundColor: cor }}
+            >
               {i + 1}
             </span>
             <span className="pt-0.5">{t}</span>
@@ -216,15 +243,18 @@ function Corpo({
   }
 
   // capa e topicos
-  return <Bullets itens={itens} corTexto={corTexto} />;
+  return <Bullets itens={itens} corTexto={corTexto} cor={cor} />;
 }
 
-function Bullets({ itens, corTexto }: { itens: string[]; corTexto: string }) {
+function Bullets({ itens, corTexto, cor }: { itens: string[]; corTexto: string; cor: string }) {
   return (
     <ul className="space-y-3">
       {itens.map((t, i) => (
         <li key={i} className={`flex gap-3 ${corTexto}`}>
-          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+          <span
+            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: cor }}
+          />
           <span>{t}</span>
         </li>
       ))}

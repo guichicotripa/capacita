@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
     prisma.atribuicao.findMany({
       where: clienteId ? { usuario: { clienteId } } : {},
       include: {
-        usuario: { include: { cliente: true } },
+        usuario: { include: { cliente: { omit: { logo: true } } } },
         treinamento: {
           include: { perguntas: { orderBy: { ordem: "asc" }, include: { alternativas: true } } },
         },

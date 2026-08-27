@@ -6,6 +6,7 @@ import { ehFullAdmin } from "@/lib/escopo";
 import { getDict } from "@/lib/i18n-server";
 import { FormNovoCliente } from "@/components/FormNovoCliente";
 import { BotaoExcluirCliente } from "@/components/BotaoExcluirCliente";
+import { IdentidadeCliente } from "@/components/IdentidadeCliente";
 
 export default async function ClientesPage({
   searchParams,
@@ -19,6 +20,9 @@ export default async function ClientesPage({
   const d = await getDict();
   const clientes = await prisma.cliente.findMany({
     orderBy: { nome: "asc" },
+    // logo NÃO entra aqui: são bytes e pesariam a listagem. Só o indicador de
+    // existência, resolvido depois com uma contagem barata.
+    omit: { logo: true },
     include: {
       usuarios: {
         where: { papel: "aluno" },
@@ -27,6 +31,13 @@ export default async function ClientesPage({
       },
     },
   });
+
+  // Quem tem logo, sem trazer os bytes: só os ids.
+  const comLogo = new Set(
+    (await prisma.cliente.findMany({ where: { logo: { not: null } }, select: { id: true } })).map(
+      (c) => c.id
+    )
+  );
 
   return (
     <div>
@@ -54,6 +65,17 @@ export default async function ClientesPage({
           {d.admin.clientes.erroTemVinculo}
         </p>
       )}
+      {ok === "identidade" && (
+        <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          {d.admin.clientes.identidadeOk}
+        </p>
+      )}
+      {erro?.startsWith("logo") && (
+        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {(d.admin.clientes as unknown as Record<string, string>)[`erroLogo${erro.slice(4)}`] ??
+            d.admin.clientes.erroLogotipo}
+        </p>
+      )}
       {ok === "excluido" && (
         <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
           {d.admin.clientes.excluidoOk}
@@ -72,6 +94,11 @@ export default async function ClientesPage({
                   <span className="text-sm text-slate-500">
                     {d.admin.clientes.resumo(c.usuarios.length, concluidos, totalAtrib.length)}
                   </span>
+                  <IdentidadeCliente
+                    id={c.id}
+                    temLogo={comLogo.has(c.id)}
+                    corAtual={c.corPrimaria}
+                  />
                   <BotaoExcluirCliente
                     id={c.id}
                     rotulo={d.admin.clientes.excluir}
