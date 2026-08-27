@@ -35,6 +35,7 @@ import {
   iaDisponivel,
   gerarCursoIA,
   gerarQuizIA,
+  gerarSlideIA,
   type CursoGerado,
   type PerguntaGerada,
 } from "./ai";
@@ -404,6 +405,59 @@ export async function gerarCursoDePPT(formData: FormData) {
   await persistirCurso(curso!, clienteId);
   revalidatePath("/admin/treinamentos");
   redirect("/admin/treinamentos");
+}
+
+// Refaz um slide com IA a partir do que está NO EDITOR (não do que está salvo)
+// e devolve o resultado para o cliente. De propósito não grava nada: o admin
+// ainda vê a prévia e decide se salva. Assim "refazer" nunca destrói trabalho.
+export type ResultadoSlideIA =
+  | { ok: true; slide: { titulo: string; conteudo: string; layout: string; svg: string | null } }
+  | { ok: false; erro: "auth" | "semIa" | "dados" | "falha" };
+
+export async function refazerSlideComIA(
+  treinamentoId: number,
+  atual: { titulo: string; conteudo: string; layout: string; svg?: string | null },
+  instrucao: string
+): Promise<ResultadoSlideIA> {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return { ok: false, erro: "auth" };
+
+  // Mesmo escopo da edição: ninguém refaz slide de treino que não pode editar.
+  const treino = await prisma.treinamento.findUnique({ where: { id: treinamentoId } });
+  if (!treino || !podeEditarTreino(treino, usuario)) return { ok: false, erro: "auth" };
+
+  if (!iaDisponivel()) return { ok: false, erro: "semIa" };
+  const pedido = String(instrucao || "").trim();
+  if (!pedido) return { ok: false, erro: "dados" };
+
+  try {
+    const gerado = await gerarSlideIA(
+      {
+        titulo: String(atual.titulo || ""),
+        conteudo: String(atual.conteudo || ""),
+        layout: String(atual.layout || "topicos"),
+        svg: atual.svg ?? null,
+      },
+      pedido,
+      {
+        tituloCurso: treino.titulo,
+        formato: treino.formatoConteudo === "prosa" ? "prosa" : "topicos",
+      }
+    );
+    return {
+      ok: true,
+      slide: {
+        titulo: gerado.titulo,
+        conteudo: gerado.conteudo,
+        layout: gerado.layout,
+        // Sanitiza aqui, no servidor: o SVG segue direto para o DOM da prévia.
+        svg: sanitizarSvg(gerado.svg),
+      },
+    };
+  } catch (e) {
+    console.error("Falha ao refazer slide com IA:", e);
+    return { ok: false, erro: "falha" };
+  }
 }
 
 // Admin substitui o quiz de um treinamento (apaga as perguntas atuais e cria as novas).

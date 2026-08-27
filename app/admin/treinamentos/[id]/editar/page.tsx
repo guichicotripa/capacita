@@ -45,7 +45,9 @@ export default async function EditarTreinamentoPage({
           : d.admin.treinos.tipoTexto;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    // O editor de slides mostra campos e prévia lado a lado, então precisa de
+    // mais largura do que os outros tipos de treinamento.
+    <div className={`mx-auto ${treino.tipo === "slides" ? "max-w-5xl" : "max-w-2xl"}`}>
       <Link href="/admin/treinamentos" className="text-sm text-slate-500 hover:underline">
         {d.admin.quiz.voltar}
       </Link>
@@ -105,6 +107,8 @@ export default async function EditarTreinamentoPage({
           <div>
             <span className="mb-2 block text-xs font-medium text-slate-600">{d.admin.editar.slides}</span>
             <EditorSlides
+              treinamentoId={treino.id}
+              formato={treino.formatoConteudo}
               inicial={treino.slides.map((s) => ({
                 titulo: s.titulo,
                 conteudo: s.conteudo,
