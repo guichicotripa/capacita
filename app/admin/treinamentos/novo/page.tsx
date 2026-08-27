@@ -68,7 +68,7 @@ export default async function NovoTreinamentoPage({
 async function FormManual({ clientes }: { clientes: { id: number; nome: string }[] }) {
   const d = await getDict();
   return (
-    <form action={criarTreinamento} className="space-y-3">
+    <form action={criarTreinamento} className="max-w-md space-y-3">
       <Campo label={d.admin.treinos.tituloLabel}>
         <input name="titulo" required className={inputCls} placeholder="Ex: Reconhecendo Phishing" />
       </Campo>

@@ -43,6 +43,17 @@ export const LAYOUTS_SLIDE = [
   "fechamento",
 ] as const;
 
+export type LayoutSlide = (typeof LAYOUTS_SLIDE)[number];
+
+// Filtra o que veio do formulário. Lista vazia ou lixo cai em "todos", que é o
+// comportamento de antes de existir o seletor.
+export function layoutsValidos(bruto: string[]): readonly LayoutSlide[] {
+  const ok = bruto.filter((l): l is LayoutSlide =>
+    (LAYOUTS_SLIDE as readonly string[]).includes(l)
+  );
+  return ok.length > 0 ? ok : LAYOUTS_SLIDE;
+}
+
 // "topicos" = bullets curtos (padrão). "prosa" = parágrafos descritivos, para
 // quando o admin quer conteúdo explicado e não lista.
 export type FormatoConteudo = "topicos" | "prosa";
@@ -83,7 +94,8 @@ const SCHEMA_PERGUNTAS = {
   },
 } as const;
 
-const SCHEMA_CURSO = {
+// O enum do schema também é restrito: o prompt pede e o schema impede.
+const schemaCurso = (permitidos: readonly LayoutSlide[]) => ({
   type: "object",
   properties: {
     titulo: { type: "string" },
@@ -95,7 +107,7 @@ const SCHEMA_CURSO = {
         properties: {
           titulo: { type: "string" },
           conteudo: { type: "string" },
-          layout: { type: "string", enum: [...LAYOUTS_SLIDE] },
+          layout: { type: "string", enum: [...permitidos] },
           // String vazia = slide sem ilustração. Não usamos null aqui porque
           // structured outputs lida melhor com um tipo só.
           svg: { type: "string" },
@@ -108,7 +120,7 @@ const SCHEMA_CURSO = {
   },
   required: ["titulo", "descricao", "slides", "perguntas"],
   additionalProperties: false,
-} as const;
+});
 
 const SCHEMA_SLIDE = {
   type: "object",
@@ -132,18 +144,27 @@ const SCHEMA_SO_QUIZ = {
 // Blocos de instrução compartilhados entre o prompt do curso inteiro e o de um
 // slide só (o "refazer com IA" do editor). Precisam ser os mesmos: se o editor
 // descrever os layouts de outro jeito, o slide refeito destoa do resto do curso.
-const REGRAS_LAYOUT = `CADA SLIDE TEM UM LAYOUT. Escolha o que melhor serve ao conteúdo daquele slide —
-uma apresentação inteira de bullets é monótona e o aluno para de ler:
-- "capa": abertura do curso. Título forte + 2 a 3 linhas dizendo o que a pessoa
-  vai aprender e por que isso importa para ela.
-- "topicos": lista de 3 a 5 pontos curtos, um por linha.
-- "prosa": 2 a 3 parágrafos explicando com contexto e exemplo, um por linha.
-- "destaque": um aviso ou regra que precisa grudar. A PRIMEIRA linha é a frase
-  em destaque (curta, direta, no imperativo); as linhas seguintes são o apoio.
-- "comparacao": o certo contra o errado. Linhas começando com "+" são o que fazer
-  e linhas começando com "-" são o que evitar. Use de 2 a 4 de cada lado.
-- "passos": procedimento numerado, uma ação por linha, na ordem de execução.
-- "fechamento": encerramento. Checklist do que fazer na prática.`;
+const DESCRICAO_LAYOUT: Record<LayoutSlide, string> = {
+  capa: `- "capa": abertura do curso. Título forte + 2 a 3 linhas dizendo o que a pessoa
+  vai aprender e por que isso importa para ela.`,
+  topicos: `- "topicos": lista de 3 a 5 pontos curtos, um por linha.`,
+  prosa: `- "prosa": 2 a 3 parágrafos explicando com contexto e exemplo, um por linha.`,
+  destaque: `- "destaque": um aviso ou regra que precisa grudar. A PRIMEIRA linha é a frase
+  em destaque (curta, direta, no imperativo); as linhas seguintes são o apoio.`,
+  comparacao: `- "comparacao": o certo contra o errado. Linhas começando com "+" são o que fazer
+  e linhas começando com "-" são o que evitar. Use de 2 a 4 de cada lado.`,
+  passos: `- "passos": procedimento numerado, uma ação por linha, na ordem de execução.`,
+  fechamento: `- "fechamento": encerramento. Checklist do que fazer na prática.`,
+};
+
+// Só descreve os layouts que o admin liberou. Descrever um layout que ele
+// desmarcou convida o modelo a usá-lo mesmo com o enum restrito.
+function regrasLayout(permitidos: readonly LayoutSlide[]): string {
+  return `CADA SLIDE TEM UM LAYOUT. Use APENAS os layouts desta lista, escolhendo o que
+melhor serve ao conteúdo de cada slide — uma apresentação inteira de bullets é
+monótona e o aluno para de ler:
+${permitidos.map((l) => DESCRICAO_LAYOUT[l]).join("\n")}`;
+}
 
 const REGRAS_SVG = `Regras do SVG, obrigatórias:
 - Comece com <svg viewBox="0 0 240 140"> e não use width nem height.
@@ -166,7 +187,8 @@ export const PROMPT = (
   tema: string,
   fonte?: string,
   instrucoes?: string,
-  formato: FormatoConteudo = "topicos"
+  formato: FormatoConteudo = "topicos",
+  permitidos: readonly LayoutSlide[] = LAYOUTS_SLIDE
 ) =>
   `Você é um especialista em treinamento de conscientização de segurança da informação.
 Crie um treinamento curto sobre o tema: "${tema}".
@@ -181,7 +203,7 @@ ${
 }
 O treinamento é uma apresentação que o aluno passa slide a slide. Gere de 5 a 7 slides.
 
-${REGRAS_LAYOUT}
+${regrasLayout(permitidos)}
 ${
   formato === "prosa"
     ? `O admin pediu conteúdo DESCRITIVO: prefira "prosa" nos slides de explicação e
@@ -190,14 +212,24 @@ por parágrafo. Continue usando "destaque", "comparacao" e "passos" onde coubere
     : `O admin pediu conteúdo em TÓPICOS: prefira "topicos" nos slides de explicação,
 com frases curtas. Continue usando "destaque", "comparacao" e "passos" onde couberem.`
 }
-Use pelo menos três layouts diferentes ao longo do curso, e no mínimo um
-"comparacao" ou um "destaque" — é o que fixa o comportamento certo.
+${
+  permitidos.length >= 3
+    ? `Use pelo menos três layouts diferentes ao longo do curso.`
+    : `Use os layouts liberados acima da forma que melhor servir ao conteúdo.`
+}${
+  permitidos.includes("comparacao") || permitidos.includes("destaque")
+    ? `
+Inclua no mínimo um "comparacao" ou um "destaque" — é o que fixa o comportamento certo.`
+    : ""
+}
 
 ILUSTRAÇÃO (campo "svg"): para 2 ou 3 slides, desenhe uma ilustração simples que
 ajude a entender o ponto. Nos demais slides, devolva "".
 ${REGRAS_SVG}
 
-O primeiro slide é a capa; o último, o fechamento.
+${permitidos.includes("capa") ? `O primeiro slide é a capa.` : ""}${
+  permitidos.includes("fechamento") ? ` O último é o fechamento.` : ""
+}
 ${REGRAS_QUIZ}
 Tudo em português do Brasil.`;
 
@@ -258,7 +290,8 @@ export async function gerarCursoIA(
   tema: string,
   fonte?: string,
   instrucoes?: string,
-  formato: FormatoConteudo = "topicos"
+  formato: FormatoConteudo = "topicos",
+  permitidos: readonly LayoutSlide[] = LAYOUTS_SLIDE
 ): Promise<CursoGerado> {
   // Streaming: 7 slides + 12 perguntas passa longe de ser resposta curta, e sem
   // stream a requisição corre risco de estourar o timeout HTTP.
@@ -268,9 +301,9 @@ export async function gerarCursoIA(
     thinking: { type: "adaptive" },
     output_config: {
       effort: "high",
-      format: { type: "json_schema", schema: SCHEMA_CURSO },
+      format: { type: "json_schema", schema: schemaCurso(permitidos) },
     },
-    messages: [{ role: "user", content: PROMPT(tema, fonte, instrucoes, formato) }],
+    messages: [{ role: "user", content: PROMPT(tema, fonte, instrucoes, formato, permitidos) }],
   });
   const response = await stream.finalMessage();
 
@@ -320,7 +353,7 @@ ${instrucao.slice(0, 1000)}
 
 Reescreva o slide atendendo ao pedido. Mude o layout se o pedido pedir ou se
 outro layout servir melhor ao novo conteúdo; se não, mantenha o atual.
-${REGRAS_LAYOUT}
+${regrasLayout(LAYOUTS_SLIDE)}
 
 O curso usa o estilo "${contexto.formato}", então mantenha o tom coerente com isso.
 

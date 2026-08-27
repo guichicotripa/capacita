@@ -36,6 +36,7 @@ import {
   gerarCursoIA,
   gerarQuizIA,
   gerarSlideIA,
+  layoutsValidos,
   motivoDoErro,
   type CursoGerado,
   type PerguntaGerada,
@@ -359,10 +360,12 @@ export async function gerarTreinamentoIA(formData: FormData) {
 
   // Formato do conteúdo: tópicos (padrão) ou prosa descritiva.
   const formato = String(formData.get("formato") || "") === "prosa" ? "prosa" : "topicos";
+  // Layouts que o admin liberou no seletor. Vazio ou inválido = todos.
+  const permitidos = layoutsValidos(formData.getAll("layouts").map(String));
 
   let curso;
   try {
-    curso = await gerarCursoIA(tema, undefined, instrucoes || undefined, formato);
+    curso = await gerarCursoIA(tema, undefined, instrucoes || undefined, formato, permitidos);
   } catch (e) {
     // "sem chave" e "a chamada falhou" são coisas diferentes. Juntar as duas num
     // aviso só mandou o admin conferir a chave enquanto o problema real era um

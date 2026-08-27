@@ -21,7 +21,9 @@ export function AbasCriacao({ abas }: { abas: { titulo: string; conteudo: React.
           </button>
         ))}
       </div>
-      <div className="max-w-md pt-5">
+      {/* Sem largura máxima aqui: cada aba decide a sua. A de gerar por IA usa
+          duas colunas (campos + seletor de layouts); as outras se limitam. */}
+      <div className="pt-5">
         {abas.map((a, i) => (
           <div key={i} className={ativa === i ? "block" : "hidden"}>
             {a.conteudo}

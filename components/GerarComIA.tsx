@@ -3,6 +3,7 @@
 import { useFormStatus } from "react-dom";
 import { subirArquivo, gerarTreinamentoIA } from "@/lib/actions";
 import { useDict } from "./I18nProvider";
+import { SeletorLayouts } from "./SeletorLayouts";
 
 function Botao({
   rotulo,
@@ -58,7 +59,7 @@ const inputCls =
 export function SubirApresentacao({ clientes }: { clientes: { id: number; nome: string }[] }) {
   const d = useDict();
   return (
-    <form action={subirArquivo} className="space-y-3">
+    <form action={subirArquivo} className="max-w-md space-y-3">
       <label className="block">
         <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.tituloLabel}</span>
         <input name="titulo" required className={inputCls} placeholder="Ex: Phishing no Teams" />
@@ -87,34 +88,35 @@ export function SubirApresentacao({ clientes }: { clientes: { id: number; nome: 
 export function GerarPorTema({ clientes }: { clientes: { id: number; nome: string }[] }) {
   const d = useDict();
   return (
-    <form action={gerarTreinamentoIA} className="space-y-3">
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.temaLabel}</span>
-        <input name="tema" required className={inputCls} placeholder="Ex: Engenharia social no WhatsApp" />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">
-          {d.admin.gerarIA.instrucoesLabel}
-        </span>
-        <textarea
-          name="instrucoes"
-          rows={3}
-          className={inputCls}
-          placeholder={d.admin.gerarIA.instrucoesPh}
-        />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">
-          {d.admin.gerarIA.formatoLabel}
-        </span>
-        <select name="formato" defaultValue="topicos" className={inputCls}>
-          <option value="topicos">{d.admin.gerarIA.formatoTopicos}</option>
-          <option value="prosa">{d.admin.gerarIA.formatoProsa}</option>
-        </select>
-      </label>
-      <SelectCliente clientes={clientes} />
-      <Botao rotulo={d.admin.gerarIA.gerarBtn} pendingRotulo={d.admin.gerarIA.gerando} />
-      <p className="text-xs text-slate-500">{d.admin.gerarIA.gerarAjuda}</p>
+    // Duas colunas: os campos à esquerda e os layouts à direita, no espaço que
+    // antes ficava vazio. O seletor precisa estar DENTRO do form para os
+    // layouts escolhidos irem junto no envio.
+    <form
+      action={gerarTreinamentoIA}
+      className="grid items-start gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]"
+    >
+      <div className="space-y-3">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-slate-600">{d.admin.gerarIA.temaLabel}</span>
+          <input name="tema" required className={inputCls} placeholder="Ex: Engenharia social no WhatsApp" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-slate-600">
+            {d.admin.gerarIA.instrucoesLabel}
+          </span>
+          <textarea
+            name="instrucoes"
+            rows={3}
+            className={inputCls}
+            placeholder={d.admin.gerarIA.instrucoesPh}
+          />
+        </label>
+        <SelectCliente clientes={clientes} />
+        <Botao rotulo={d.admin.gerarIA.gerarBtn} pendingRotulo={d.admin.gerarIA.gerando} />
+        <p className="text-xs text-slate-500">{d.admin.gerarIA.gerarAjuda}</p>
+      </div>
+
+      <SeletorLayouts />
     </form>
   );
 }
