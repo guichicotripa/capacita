@@ -131,15 +131,9 @@ export default async function TreinamentosPage({
                     {/* Editar/quiz/remover só para treinos que este admin pode editar. */}
                     {podeEditarTreino(t, usuario) && (
                       <>
-                        {/* Editar leva ao editor de slides e era só um lápis sem
-                            rótulo: ninguém achava. Agora vai com texto. */}
-                        <Link
-                          href={`/admin/treinamentos/${t.id}/editar`}
-                          className="mr-1 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                        >
+                        <IconLink href={`/admin/treinamentos/${t.id}/editar`} titulo={d.admin.treinos.editar}>
                           <IconPencil />
-                          {t.tipo === "slides" ? d.admin.treinos.editarSlides : d.admin.treinos.editar}
-                        </Link>
+                        </IconLink>
                         <IconLink
                           href={`/admin/treinamentos/${t.id}/quiz`}
                           titulo={t._count.perguntas > 0 ? d.admin.treinos.editarQuiz : d.admin.treinos.addQuiz}
