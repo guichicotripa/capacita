@@ -57,6 +57,10 @@ componente que o aluno vê. Dá para trocar o layout, remover a ilustração e u
 **"Refazer este slide com IA"** com instrução livre ("deixe mais curto e vire comparação").
 O refazer não grava nada: devolve para a tela e o admin decide se salva.
 
+O admin também pode **subir a própria imagem** em qualquer slide (PNG, JPG, WEBP ou SVG,
+até 1 MB): foto, print de tela, arte da empresa. Quando existe imagem enviada, ela aparece
+no lugar da ilustração da IA, e a prévia mostra a imagem de verdade, não um espaço reservado.
+
 ### Avaliação
 
 O quiz é um **banco** (padrão: 12 perguntas), e cada tentativa sorteia um subconjunto
@@ -73,6 +77,12 @@ tentativa em cópia.
 - A avaliação só libera depois de passar por todos os slides
 - Modo apresentação: abre em janela separada, sem menu, com botão de tela cheia
 - Certificado imprimível com código de verificação assinado (HMAC)
+
+### Identidade visual por empresa
+
+Cada cliente pode ter **logo e cor próprios**, cadastrados em Clientes. Eles aparecem na
+capa dos slides, no cabeçalho e no certificado. A marca vem da **empresa do aluno**, não da
+dona do treinamento: um curso global atribuído à Acme sai com a marca da Acme.
 
 ### Administração
 
@@ -99,10 +109,13 @@ tentativa em cópia.
 O `prisma/schema.prisma` é a melhor forma de entender, mas o resumo:
 
 ```
-Cliente ──< Usuario ──< Atribuicao >── Treinamento ──< Slide
+Cliente ──< Usuario ──< Atribuicao >── Treinamento ──< Slide >── ImagemSlide
                             │                     └──< Pergunta ──< Alternativa
                             └──< Notificacao      └─── Arquivo (PDF/PPT)
 ```
+
+`ImagemSlide` é presa ao **treinamento**, não ao slide, porque salvar o editor apaga e
+recria os slides; se dependesse do slide, a imagem morreria a cada salvamento.
 
 **Não existe tabela de "tenant".** A separação entre empresas é feita por
 `Usuario.clienteId`: um admin com `clienteId` nulo é o admin geral e vê tudo; um admin com
@@ -119,6 +132,7 @@ Cliente ──< Usuario ──< Atribuicao >── Treinamento ──< Slide
 | `lib/ai.ts` | Prompts, schemas e chamadas ao modelo |
 | `lib/quiz.ts` | Sorteio das perguntas por tentativa |
 | `lib/svg.ts` | Sanitizador do SVG vindo da IA |
+| `lib/imagem.ts` | Validação da imagem enviada (magic number + SVG sanitizado) |
 | `lib/status.ts` | Regra de concluído / pendente / vencido |
 
 ### Segurança
@@ -131,6 +145,12 @@ Cliente ──< Usuario ──< Atribuicao >── Treinamento ──< Slide
 - O **SVG gerado pela IA é sanitizado por allowlist** antes de entrar no DOM
   (`lib/svg.ts`, 13 testes). Sem isso, um `<script>` ou um `onload=` vindo do modelo viraria
   XSS dentro de uma plataforma que vende segurança
+- **Imagem enviada pelo admin** (logo da empresa, imagem de slide) passa pelo mesmo
+  sanitizador e é **gravada já limpa** (`lib/imagem.ts`). O tipo vem da assinatura dos bytes,
+  não da extensão nem do `Content-Type` do navegador
+- Imagem de slide **não é pública**: a rota confere se quem pede tem o treinamento atribuído
+  ou é admin com escopo sobre ele. E o `imagemId` que volta do editor só é aceito se a imagem
+  for daquele treinamento, senão bastaria trocar o número para puxar material de outro cliente
 
 ### Testes
 
@@ -138,8 +158,8 @@ Cliente ──< Usuario ──< Atribuicao >── Treinamento ──< Slide
 npm test
 ```
 
-Cobertura deliberadamente estreita: a lógica pura e verificável (sorteio de perguntas e
-sanitização de SVG). O resto é validado rodando a aplicação.
+Cobertura deliberadamente estreita: a lógica pura e verificável (sorteio de perguntas,
+sanitização de SVG, validação de imagem enviada). O resto é validado rodando a aplicação.
 
 ---
 
@@ -170,6 +190,16 @@ Uma empresa de 200 funcionários, com 8 capacitações por ano e 20 ajustes de s
 **US$ 1,50 por ano** em IA. Isso é menos de um centavo de dólar por funcionário por ano.
 O custo real da operação está na infraestrutura fixa (hospedagem, banco, email), não no
 modelo de linguagem.
+
+### Armazenamento
+
+Imagem de slide e logo de empresa **não custam IA**: são arquivos, e o custo é de banco.
+Cada imagem é limitada a 1 MB (logo, a 200 KB), e ficam dentro do Postgres. Na prática,
+um curso com imagem em todos os slides fica na casa de poucos MB.
+
+O que pesa de verdade são os **PDF/PPTX enviados**, que também ficam no banco e são
+grandes. É o primeiro item a mover para armazenamento externo se o volume crescer, e o
+único ponto em que o custo de armazenamento vira conversa (ver *Dívida conhecida*).
 
 ### Como reconferir
 
@@ -268,6 +298,16 @@ ela é.
 **"Refazer com IA" não grava.** O resultado volta para a tela e o admin decide. Se gravasse
 direto, um refazer ruim destruiria o texto que a pessoa acabou de ajustar.
 
+**A imagem do slide sobe na hora; o editor guarda só o id.** Se a imagem viajasse dentro do
+formulário do treinamento, cada slide com foto engordaria o payload do salvar. Como efeito,
+a imagem fica gravada mesmo se o admin desistir de salvar; o que sobra é apagado no
+salvamento seguinte, que é o único momento em que dá para saber com certeza o que está em uso.
+
+**Imagem de slide no banco, e não em armazenamento externo.** O perfil dela é o do logo,
+não o do PDF: pequena (teto de 1 MB), uma por slide, exibida em tela. Trazer S3 ou R2
+significaria credencial nova, serviço novo e mais uma coisa a manter, para um ganho que o
+volume atual não pede. Fica na mesma fila do `Arquivo` para migrar quando o volume crescer.
+
 **Arquivo enviado fica no banco, numa tabela separada.** `Arquivo` guarda os bytes fora de
 `Treinamento` para não pesar as consultas de lista e relatório. Funciona no volume atual,
 mas **é o primeiro candidato a virar problema de custo** com muitos clientes subindo
@@ -279,9 +319,6 @@ material pesado; a saída natural é mover para armazenamento de objeto.
 
 - **Phishing simulado.** É o que o mercado de conscientização espera de um concorrente do
   KnowBe4, e é a maior lacuna funcional hoje.
-- **Logo e identidade visual por cliente.** As capacitações saem com a identidade da
-  plataforma, não a da empresa.
-- **Imagem própria no slide.** Só ilustração gerada pela IA.
 - **SSO** e provisionamento de usuários (SCIM).
 - **Trilha de auditoria** e tratamento formal de LGPD.
 - **Testes automatizados abrangentes.** Hoje só a lógica pura é testada.

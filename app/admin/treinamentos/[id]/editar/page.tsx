@@ -114,6 +114,7 @@ export default async function EditarTreinamentoPage({
                 conteudo: s.conteudo,
                 layout: s.layout,
                 svg: s.svg,
+                imagemId: s.imagemId,
               }))}
             />
           </div>

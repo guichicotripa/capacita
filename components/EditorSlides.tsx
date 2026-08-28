@@ -1,18 +1,25 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useDict } from "./I18nProvider";
 import { Slide as SlideView, type DadosSlide } from "./Slide";
-import { refazerSlideComIA } from "@/lib/actions";
+import { refazerSlideComIA, subirImagemSlide } from "@/lib/actions";
 
-// layout e svg não são digitados aqui, mas viajam junto: a ação de salvar apaga
-// e recria os slides a partir deste JSON, então o que não vier aqui é perdido.
-type Slide = { titulo: string; conteudo: string; layout?: string | null; svg?: string | null };
+// layout, svg e imagemId não são digitados aqui, mas viajam junto: a ação de
+// salvar apaga e recria os slides a partir deste JSON, então o que não vier
+// aqui é perdido.
+type Slide = {
+  titulo: string;
+  conteudo: string;
+  layout?: string | null;
+  svg?: string | null;
+  imagemId?: number | null;
+};
 
 const LAYOUTS = ["capa", "topicos", "prosa", "destaque", "comparacao", "passos", "fechamento"] as const;
 type Layout = (typeof LAYOUTS)[number];
 
-const VAZIO: Slide = { titulo: "", conteudo: "", layout: "topicos", svg: null };
+const VAZIO: Slide = { titulo: "", conteudo: "", layout: "topicos", svg: null, imagemId: null };
 
 // Editor do deck: cada slide tem os campos de um lado e a prévia real do outro.
 // A prévia usa o MESMO componente que o aluno vê, então não existe divergência
@@ -93,6 +100,31 @@ function CartaoSlide({
   const [instrucao, setInstrucao] = useState("");
   const [erroIa, setErroIa] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
+  const [erroImagem, setErroImagem] = useState<string | null>(null);
+  const [subindo, setSubindo] = useState(false);
+  const campoArquivo = useRef<HTMLInputElement>(null);
+
+  // A imagem sobe na hora, sozinha, e o editor guarda só o id devolvido. Se ela
+  // viajasse dentro do formulário do treino, cada slide com foto engordaria o
+  // payload do salvar.
+  const subirImagem = async (arquivo: File) => {
+    setErroImagem(null);
+    setSubindo(true);
+    try {
+      const fd = new FormData();
+      fd.append("imagem", arquivo);
+      const r = await subirImagemSlide(treinamentoId, fd);
+      if (r.ok) onTrocar({ imagemId: r.imagemId });
+      else setErroImagem(d.admin.editorSlides.erroImagem[r.erro]);
+    } catch {
+      setErroImagem(d.admin.editorSlides.erroImagem.falha);
+    } finally {
+      setSubindo(false);
+      // Zera o campo para dar para escolher o MESMO arquivo de novo depois de
+      // um erro (sem isto, o onChange não dispara na segunda vez).
+      if (campoArquivo.current) campoArquivo.current.value = "";
+    }
+  };
 
   const layoutAtual = (LAYOUTS as readonly string[]).includes(slide.layout ?? "")
     ? (slide.layout as Layout)
@@ -211,6 +243,51 @@ function CartaoSlide({
               </button>
             </div>
           )}
+
+          {/* Imagem própria do slide (foto, print, arte da empresa). */}
+          <div className="mt-3 rounded-md border border-slate-200 bg-white p-2.5">
+            <span className="mb-1.5 block text-[11px] font-medium text-slate-500">
+              {d.admin.editorSlides.imagemTitulo}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <label
+                className={`cursor-pointer rounded-md border border-slate-300 px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 ${
+                  subindo ? "pointer-events-none opacity-50" : ""
+                }`}
+              >
+                {subindo
+                  ? d.admin.editorSlides.subindoImagem
+                  : slide.imagemId
+                    ? d.admin.editorSlides.trocarImagem
+                    : d.admin.editorSlides.escolherImagem}
+                <input
+                  ref={campoArquivo}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) subirImagem(f);
+                  }}
+                />
+              </label>
+              {slide.imagemId && (
+                <button
+                  type="button"
+                  onClick={() => onTrocar({ imagemId: null })}
+                  className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                >
+                  {d.admin.editorSlides.removerImagem}
+                </button>
+              )}
+            </div>
+            <p className="mt-1.5 text-[11px] leading-snug text-slate-500">
+              {slide.imagemId && slide.svg
+                ? d.admin.editorSlides.imagemGanhaDaIlustracao
+                : d.admin.editorSlides.imagemAjuda}
+            </p>
+            {erroImagem && <p className="mt-1 text-[11px] text-red-600">{erroImagem}</p>}
+          </div>
 
           {/* Refazer com IA: age sobre o que está na tela e devolve para a tela.
               Nada é gravado até o admin salvar o formulário. */}

@@ -84,6 +84,7 @@ model Treinamento {
   perguntas   Pergunta[] // quiz opcional; se houver perguntas, concluir exige passar
   slides      Slide[] // conteudo em slides quando tipo = slides
   arquivo     Arquivo? // PDF/PPTX original quando tipo = arquivo
+  imagens     ImagemSlide[] // imagens que o admin subiu para os slides deste treino
   notaMinima  Int          @default(70) // % minimo de acerto para concluir
   // Quantas perguntas do banco caem em cada tentativa. O banco pode ter 12 e a
   // prova mostrar 5: quem reprova pega um sorteio diferente na proxima vez.
@@ -122,6 +123,29 @@ model Slide {
   // Ilustracao do slide, em SVG inline gerado junto com o conteudo. Passa pelo
   // sanitizador (lib/svg.ts) antes de ir para a tela. Null = slide sem imagem.
   svg           String?
+  // Imagem que o admin subiu para este slide. Quando existe, ela substitui a
+  // ilustracao da IA: escolha explicita do humano ganha do que foi gerado.
+  // SetNull porque o dono da imagem e o treinamento, nao o slide: salvar o
+  // editor recria os slides do zero e a imagem tem que sobreviver a isso.
+  imagemId      Int?
+  imagem        ImagemSlide? @relation(fields: [imagemId], references: [id], onDelete: SetNull)
+
+  @@index([treinamentoId])
+  @@index([imagemId])
+}
+
+// Imagem enviada pelo admin para um slide. Fica em tabela propria pelo mesmo
+// motivo de Arquivo: os bytes nao podem entrar nas queries de lista e de
+// consumo do deck. Presa ao TREINAMENTO, nao ao slide, porque salvar o editor
+// apaga e recria os slides — se dependesse do slide, a imagem morreria junto.
+model ImagemSlide {
+  id            Int         @id @default(autoincrement())
+  treinamentoId Int
+  treinamento   Treinamento @relation(fields: [treinamentoId], references: [id], onDelete: Cascade)
+  mime          String // image/png | image/jpeg | image/webp | image/svg+xml
+  dados         Bytes
+  slides        Slide[]
+  criadoEm      DateTime    @default(now())
 
   @@index([treinamentoId])
 }

@@ -26,6 +26,9 @@ export type DadosSlide = {
   conteudo: string;
   layout?: string | null;
   svg?: string | null;
+  // Imagem que o admin subiu para este slide. Só o id: os bytes vêm pela rota
+  // /api/slide-imagem/[id], que confere quem pode ver.
+  imagemId?: number | null;
 };
 
 // Identidade visual da empresa dona da capacitação. Sem isso, o slide usa o
@@ -122,7 +125,7 @@ export function Slide({
         <div className="mt-3 h-1 w-12 rounded-full" style={{ backgroundColor: cor }} />
       )}
 
-      <Ilustracao svg={slide.svg} escuro={ehCapa} />
+      <Ilustracao svg={slide.svg} imagemId={slide.imagemId} escuro={ehCapa} grande={grande} />
 
       <div className={grande ? "mt-8 text-lg sm:text-xl" : "mt-5"}>
         <Corpo layout={layout} itens={itens} escuro={ehCapa} cor={cor} />
@@ -135,14 +138,40 @@ export function Slide({
   );
 }
 
+// Imagem do slide. A que o admin subiu ganha da ilustração da IA: escolha
+// explícita de humano vale mais que o que foi gerado.
+//
 // O SVG já vem sanitizado do servidor (lib/svg.ts). Este componente não
 // sanitiza nada: se chegar sujo aqui, o problema é lá atrás.
-function Ilustracao({ svg, escuro }: { svg?: string | null; escuro: boolean }) {
+function Ilustracao({
+  svg,
+  imagemId,
+  escuro,
+  grande,
+}: {
+  svg?: string | null;
+  imagemId?: number | null;
+  escuro: boolean;
+  grande: boolean;
+}) {
+  const fundo = escuro ? "bg-white/5" : "bg-slate-50";
+
+  if (imagemId) {
+    return (
+      <div className={`mt-5 flex justify-center rounded-lg p-3 ${fundo}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/api/slide-imagem/${imagemId}`}
+          alt=""
+          className={`w-auto rounded object-contain ${grande ? "max-h-72" : "max-h-52"}`}
+        />
+      </div>
+    );
+  }
+
   if (!svg) return null;
   return (
-    <div
-      className={`mt-5 flex justify-center rounded-lg p-3 ${escuro ? "bg-white/5" : "bg-slate-50"}`}
-    >
+    <div className={`mt-5 flex justify-center rounded-lg p-3 ${fundo}`}>
       <div
         className="[&>svg]:h-auto [&>svg]:max-h-44 [&>svg]:w-full [&>svg]:max-w-sm"
         dangerouslySetInnerHTML={{ __html: svg }}

@@ -45,6 +45,12 @@ import { gerarSegredoMfa, verificarCodigoMfa } from "./mfa";
 import { extrairTextoPptx } from "./pptx";
 import { sanitizarSvg } from "./svg";
 import { validarLogo, normalizarCor } from "./logo";
+import {
+  validarImagem,
+  imagemDoTreino,
+  IMAGEM_SLIDE_MAX_BYTES,
+  type ErroImagem,
+} from "./imagem";
 
 // Cria um treinamento em slides + quiz a partir de um curso gerado (helper interno).
 async function persistirCurso(
@@ -468,6 +474,40 @@ export async function refazerSlideComIA(
   }
 }
 
+// Admin sobe uma imagem para um slide. Grava na hora e devolve só o id: o
+// editor guarda o id no JSON do deck, nunca os bytes. Mandar a imagem dentro do
+// formulário do treino faria o payload crescer por slide e estourar no salvar.
+//
+// A imagem fica gravada mesmo se o admin não salvar o treino depois. É de
+// propósito: sem isso, a prévia não teria o que mostrar. O que sobra vira órfão
+// e é apagado no salvar (ver atualizarTreinamento).
+export type ResultadoImagemSlide =
+  | { ok: true; imagemId: number }
+  | { ok: false; erro: "auth" | ErroImagem };
+
+export async function subirImagemSlide(
+  treinamentoId: number,
+  formData: FormData
+): Promise<ResultadoImagemSlide> {
+  const usuario = await getUsuarioAtual();
+  if (!usuario || usuario.papel !== "admin") return { ok: false, erro: "auth" };
+
+  const treino = await prisma.treinamento.findUnique({ where: { id: treinamentoId } });
+  if (!treino || !podeEditarTreino(treino, usuario)) return { ok: false, erro: "auth" };
+
+  const arquivo = formData.get("imagem") as File | null;
+  if (!arquivo || arquivo.size === 0) return { ok: false, erro: "vazio" };
+
+  const r = validarImagem(Buffer.from(await arquivo.arrayBuffer()), IMAGEM_SLIDE_MAX_BYTES);
+  if ("erro" in r) return { ok: false, erro: r.erro };
+
+  const criada = await prisma.imagemSlide.create({
+    data: { treinamentoId, mime: r.mime, dados: new Uint8Array(r.dados) },
+    select: { id: true },
+  });
+  return { ok: true, imagemId: criada.id };
+}
+
 // Admin substitui o quiz de um treinamento (apaga as perguntas atuais e cria as novas).
 export async function salvarQuiz(formData: FormData) {
   const usuario = await getUsuarioAtual();
@@ -673,6 +713,7 @@ export async function atualizarTreinamento(formData: FormData) {
       conteudo: string;
       layout?: string | null;
       svg?: string | null;
+      imagemId?: number | null;
     }[] = [];
     try {
       slides = JSON.parse(String(formData.get("slidesJson") || "[]"));
@@ -680,6 +721,16 @@ export async function atualizarTreinamento(formData: FormData) {
       slides = [];
     }
     slides = slides.filter((s) => (s.titulo || "").trim() || (s.conteudo || "").trim());
+
+    // O imagemId veio do navegador. Sem esta checagem, um admin poderia apontar
+    // um slide para a imagem de um treino de OUTRO cliente só trocando o número
+    // no JSON — e a imagem passaria a ser servida por este treino.
+    const proprias = new Set(
+      (await prisma.imagemSlide.findMany({ where: { treinamentoId: id }, select: { id: true } }))
+        .map((x) => x.id)
+    );
+    const imagemDe = (s: { imagemId?: number | null }) => imagemDoTreino(s.imagemId, proprias);
+
     await prisma.slide.deleteMany({ where: { treinamentoId: id } });
     if (slides.length > 0) {
       await prisma.slide.createMany({
@@ -691,8 +742,18 @@ export async function atualizarTreinamento(formData: FormData) {
           layout: s.layout || "topicos",
           // Re-sanitiza: o JSON veio do navegador, não é fonte confiável.
           svg: sanitizarSvg(s.svg),
+          imagemId: imagemDe(s),
         })),
       });
+    }
+
+    // Imagem subida e depois trocada/removida antes de salvar fica órfã no
+    // banco. Aqui é o único momento em que dá para saber com certeza quais
+    // ainda estão em uso, então é aqui que a limpeza acontece.
+    const emUso = new Set(slides.map(imagemDe).filter((x): x is number => x !== null));
+    const orfas = [...proprias].filter((x) => !emUso.has(x));
+    if (orfas.length > 0) {
+      await prisma.imagemSlide.deleteMany({ where: { id: { in: orfas } } });
     }
   }
 
